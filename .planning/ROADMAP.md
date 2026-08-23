@@ -1,8 +1,8 @@
 # Animatic — ROADMAP.md
 
-## Milestone 1 — Rocky Demo (Deadline: 2026-09-09)
-
-The complete working demo: Rocky scenes 1–8, hosted on AWS, live beat parsing and footage swap, three-state render.
+## Milestone 1 — Actor
+**Goal:** Minimum functionality — can we generate the first animatics?
+Generate a complete animatic from the Rocky script: beat parsing, panels, audio, motion, assembled video. Local or internal — no external-facing UI required.
 
 ---
 
@@ -11,7 +11,6 @@ The complete working demo: Rocky scenes 1–8, hosted on AWS, live beat parsing 
 
 - Python project layout (`src/`, `tests/`, `scripts/`)
 - AWS infrastructure: S3 buckets, ECS or Lambda hosting, CloudFront CDN
-- GitHub repo, public, OSI license
 - `.env` / secrets management for Google Cloud credentials
 - Basic FastAPI or Flask web server, health-check endpoint live at public URL
 - README with run-from-scratch instructions
@@ -85,7 +84,7 @@ The complete working demo: Rocky scenes 1–8, hosted on AWS, live beat parsing 
 ---
 
 ### Phase 7 — Video Assembly
-**Goal:** Timed video cut from panels, motion, audio.
+**Goal:** Timed video cut from panels, motion, audio. First complete watchable animatic.
 
 - FFmpeg-based assembly pipeline
 - Shot duration from beat duration estimate
@@ -93,7 +92,13 @@ The complete working demo: Rocky scenes 1–8, hosted on AWS, live beat parsing 
 - Output: single video file (MP4)
 - Shot duration carries machine-readable reason
 
-**Verification:** `assemble(beat_list)` produces a watchable MP4 of Rocky scenes 1–8.
+**Verification:** `assemble(beat_list)` produces a watchable MP4 of Rocky scenes 1–8. **Milestone 1 complete.**
+
+---
+
+## Milestone 2 — Box Office
+**Goal:** Add footage replacement and a real external-facing demo interface — submission-ready.
+Takes the working animatic pipeline and wraps it in a hosted public UI with live beat parsing, shot swap, three-state render, and all submission deliverables.
 
 ---
 
@@ -112,7 +117,7 @@ The complete working demo: Rocky scenes 1–8, hosted on AWS, live beat parsing 
 ### Phase 9 — Web UI & Demo Shell
 **Goal:** Hosted demo UI — three-state render, progress indicators, cache disclosure.
 
-- Web UI (FastAPI + lightweight frontend, or Next.js thin wrapper)
+- Web UI (FastAPI + lightweight frontend)
 - Scene state selector: all panels / partial footage / all footage
 - Live beat parsing triggered from UI
 - Live footage swap triggered from UI
