@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# AWS / GCloud credentials
+.aws/
+service-account*.json
+gcloud-credentials*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Generated media (store in S3)
+generated/
+output/
+*.mp3
+*.wav
+
+# Byte-compiled
+*.pyc
