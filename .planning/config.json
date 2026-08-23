@@ -1,0 +1,16 @@
+{
+  "project": "animatic",
+  "version": "0.1.0",
+  "created": "2026-07-27",
+  "deadline": "2026-09-09",
+  "language": "python",
+  "cloud": "aws",
+  "ai_provider": "google-cloud",
+  "workflow": {
+    "phases": "sequential",
+    "commits": "atomic-per-plan",
+    "verification": true,
+    "code_review": true
+  },
+  "planning_style": "discuss-plan-execute-verify"
+}
