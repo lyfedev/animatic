@@ -23,7 +23,38 @@ rendered instruction words into the frame as artwork (the literal words
 
 from __future__ import annotations
 
+import re
+from typing import Any
+
 from animatic.core.slot_resolver import Slot
+
+# Colour words are stripped from any text that reaches the prompt. A colour
+# in a location's own name reads to the model as an instruction to break the
+# monochrome rule — observed on this project's first tracer, where "BLUE DOOR
+# FIGHT CLUB" produced a blue-filled door. General defence, not a per-slot fix.
+_COLOUR_WORD_RE = re.compile(
+    r"\b(black|white|red|blue|green|yellow|orange|purple|pink|brown|"
+    r"grey|gray|gold|silver)\b",
+    re.IGNORECASE,
+)
+
+# Screenplay text that asks for words ON SCREEN. Beat content reproduces these
+# faithfully, and handing one to an image model is handing it a caption to
+# render: the beat "SUPERIMPOSE OVER ACTION: 'NOVEMBER 12, 1975 - PHILADELPHIA'"
+# produced exactly that sentence painted across the frame in 60pt type. Every
+# screenplay has these, so strip them rather than special-casing this beat.
+_ON_SCREEN_TEXT_RE = re.compile(
+    r"\b(superimpose|super|title|caption|subtitle|insert|credits?|"
+    r"chyron|legend|card)\b[^.]*\.?",
+    re.IGNORECASE,
+)
+# Quoted spans are the other way words reach the frame — a script quotes the
+# lettering it wants to see ("ANIMAL TOWN PET SHOP", "The Italian Stallion").
+_QUOTED_RE = re.compile(r"[\"\u201c\u2018']([^\"\u201d\u2019']{2,60})[\"\u201d\u2019']")
+
+# How many of a slot's beats are summarised into its subject clause. Enough to
+# characterise the space, few enough to stay a description rather than a plot.
+_MAX_DESCRIPTION_BEATS = 3
 
 STYLE_BLOCK = (
     "Style: a single flat illustration drawn in solid black ink outlines on "
@@ -40,6 +71,50 @@ STYLE_BLOCK = (
     "metal or paper — so the only marks anywhere in the frame are the "
     "drawn contour lines of the subject itself."
 )
+
+
+def describe_slot(slot: Slot, beats: dict[str, Any]) -> str:
+    """Describe a slot from the beats that use it, not from its name.
+
+    The slot name alone is a poor subject. Stripping the colour word out of
+    "BLUE DOOR FIGHT CLUB" leaves "DOOR FIGHT CLUB", and the model drew a
+    door — architecturally reasonable, and nothing like the room the script
+    describes. The beat list already carries that room in prose ("the trashy,
+    dimly lit fight club environment with a tiny boxing ring", "ringside
+    spectators clamor for blood in the thick smoke"), so use it.
+
+    Script-derived, so it scales to any screenplay and needs no per-slot
+    wording. Re-running after the beats change re-describes the slot.
+
+    Intended for LOCATION slots. A beat's content describes the action, not
+    the people in it, so two characters sharing a scene resolve to the same
+    sentence — `rocky` and `black_fighter` came back byte-identical. Callers
+    keep using the character's name as its own subject.
+    """
+    wanted = set(slot.beat_ids or [])
+    lines = [
+        b.get("content", "").strip()
+        for b in beats.get("beats", [])
+        if b.get("beat_id") in wanted and b.get("content")
+    ]
+    if not lines:
+        return _strip_colour(slot.display_name).lower()
+    joined = " ".join(lines[:_MAX_DESCRIPTION_BEATS])
+    return _strip_colour(_strip_on_screen_text(joined)).rstrip(". ").lower()
+
+
+def _strip_colour(text: str) -> str:
+    return re.sub(r"\s+", " ", _COLOUR_WORD_RE.sub("", text)).strip()
+
+
+def _strip_on_screen_text(text: str) -> str:
+    """Remove anything that asks for words to appear in the picture.
+
+    Two sources: title-card directives (SUPERIMPOSE, INSERT, CREDITS) and
+    quoted lettering. Both are legitimate screenplay content and both become
+    literal painted text when handed to an image model.
+    """
+    return _QUOTED_RE.sub("", _ON_SCREEN_TEXT_RE.sub("", text))
 
 
 def build_slot_prompt(slot: Slot, note: str) -> str:

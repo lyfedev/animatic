@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from animatic.core.asset_generator import generate_slot_art
 from animatic.core.asset_manifest import build_manifest, write_manifest, write_slot_art
 from animatic.core.slot_resolver import resolve_slots
-from animatic.core.style import build_slot_prompt
+from animatic.core.style import build_slot_prompt, describe_slot
 
 
 def main() -> None:
@@ -85,7 +85,7 @@ def main() -> None:
     else:
         for slot in slots:
             t0 = time.time()
-            prompt = build_slot_prompt(slot, _subject_note(slot))
+            prompt = build_slot_prompt(slot, _subject_note(slot, beats))
             slot.prompt = prompt
             image_bytes, mime_type = generate_slot_art(slot, prompt)
             write_slot_art(slot, image_bytes, mime_type)
@@ -124,7 +124,7 @@ def _location_description(display_name: str) -> str:
     return re.sub(r"\s+", " ", stripped)
 
 
-def _subject_note(slot) -> str:
+def _subject_note(slot, beats) -> str:
     """Build the subject clause for one slot's generation prompt.
 
     Locations ask for an empty establishing view — no people, no in-scene
@@ -141,7 +141,7 @@ def _subject_note(slot) -> str:
         # instruction to break the monochrome style — both observed on
         # this exact slot (a hand-lettered "BLUE DOOR FIGHT CLUB" sign and
         # a blue-filled door) before this prompt was tightened.
-        description = _location_description(slot.display_name).lower()
+        description = describe_slot(slot, beats)
         return (
             f"An empty establishing view of the physical space itself — "
             f"the architecture, fixtures and props implied by "
@@ -153,7 +153,17 @@ def _subject_note(slot) -> str:
             f"hand-painted with this location's own name or any other "
             f"word."
         )
-    return f"{slot.display_name.title()}, standing alone against a blank background."
+    # Characters are deliberately NOT described from their beats. A beat's
+    # content describes the action, not the person, so every character sharing
+    # a scene would inherit the same sentence and be drawn the same way —
+    # rocky and black_fighter came back byte-identical when this was tried.
+    # The name is the better subject for a character until reference art or a
+    # character-description pass exists.
+    return (
+        f"{slot.display_name.title()}, a single full-length figure standing "
+        f"alone against an open white background, carrying no lettering "
+        f"anywhere in the picture."
+    )
 
 
 if __name__ == "__main__":

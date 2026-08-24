@@ -78,3 +78,74 @@ def test_style_block_is_referenced_by_asset_generator(mock_client_cls):
 
     _, kwargs = mock_client.models.generate_content.call_args
     assert STYLE_BLOCK in kwargs["contents"]
+
+
+# ---------------------------------------------------------------------------
+# Slot descriptions come from beat content, and carry no on-screen text
+# ---------------------------------------------------------------------------
+
+def test_describe_slot_uses_beat_content_not_the_slot_name():
+    """A slot name is a poor subject; the beats already describe the room.
+
+    Regression guard: with only the name to go on, colour-stripping
+    "BLUE DOOR FIGHT CLUB" left "DOOR FIGHT CLUB" and the model drew a door.
+    """
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import describe_slot
+
+    slot = Slot(slot_id="int_gym", slot_type="location", display_name="BLUE DOOR GYM")
+    slot.beat_ids = ["s1b1"]
+    beats = {"beats": [
+        {"beat_id": "s1b1", "content": "A tiny ring under dim overhead lights."},
+    ]}
+    out = describe_slot(slot, beats)
+    assert "tiny ring" in out
+    assert "overhead lights" in out
+
+
+def test_describe_slot_strips_superimpose_directives():
+    """Title-card text must never reach an image model.
+
+    The beat "SUPERIMPOSE OVER ACTION: 'NOVEMBER 12, 1975 - PHILADELPHIA'"
+    was rendered as that literal sentence across the frame in 60pt type.
+    """
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import describe_slot
+
+    slot = Slot(slot_id="int_gym", slot_type="location", display_name="GYM")
+    slot.beat_ids = ["s1b1"]
+    beats = {"beats": [{
+        "beat_id": "s1b1",
+        "content": ("SUPERIMPOSE OVER ACTION: 'NOVEMBER 12, 1975 - PHILADELPHIA'. "
+                    "The club has a tiny ring."),
+    }]}
+    out = describe_slot(slot, beats)
+    assert "november" not in out
+    assert "philadelphia" not in out
+    assert "superimpose" not in out
+    assert "tiny ring" in out
+
+
+def test_describe_slot_strips_quoted_lettering():
+    """A script quotes the lettering it wants on screen; the model paints it."""
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import describe_slot
+
+    slot = Slot(slot_id="ext_shop", slot_type="location", display_name="PET SHOP")
+    slot.beat_ids = ["s5b4"]
+    beats = {"beats": [{
+        "beat_id": "s5b4",
+        "content": 'He pauses at the "ANIMAL TOWN PET SHOP" and peers inside.',
+    }]}
+    out = describe_slot(slot, beats)
+    assert "animal town" not in out
+    assert "peers inside" in out
+
+
+def test_describe_slot_falls_back_to_name_when_no_beats_match():
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import describe_slot
+
+    slot = Slot(slot_id="int_hall", slot_type="location", display_name="HALLWAY")
+    slot.beat_ids = ["missing"]
+    assert describe_slot(slot, {"beats": []}) == "hallway"
