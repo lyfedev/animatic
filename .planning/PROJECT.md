@@ -30,6 +30,9 @@ Parse the screenplay into beats → generate line-art panels (or use supplied re
 
 ## Demo Constraints (Fixed Content)
 - Script: Rocky (1976), scenes 1–8 only
+  - Scene 2 is a SUPERIMPOSE title card, not an INT/EXT slug, and carries the
+    entire opening fight (532 words). Scene 1 is a bare slug line. Pinned by
+    `test_extract_scenes_returns_scenes_1_to_8`.
 - No user-supplied script upload — fixed content only
 - Generated media may be pre-computed and cached (UI must disclose if cached)
 - Beat parsing and footage replacement must execute live
