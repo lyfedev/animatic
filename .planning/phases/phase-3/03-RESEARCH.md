@@ -451,7 +451,17 @@ def content_hash(art_bytes: bytes) -> str:
 
 **If this table is empty:** N/A — see entries above.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> **Both resolved 2026-08-24, before planning.**
+> **Q1 (slot count):** resolved to **7 locations / 16 slots** by the same-day D-03
+> correction in `03-CONTEXT.md`. `INT.`/`EXT.` are NOT normalised away — dropping them
+> wrongly merged `EXT. ROCKY'S APARTMENT` with `INT. ROCKY'S APARTMENT`. The computed
+> table below shows 6 locations because it applied the pre-correction wording; it is
+> stale. The plans pin 7, and plan-check independently recomputed and confirmed it.
+> **Q2 (which API call works):** resolved without a spike. The call that produced the
+> working smoke-test image is recorded as D-12 in `03-CONTEXT.md` and written directly
+> into `03-01-PLAN.md` Task 1.
 
 1. **Does the planner want 15 total slots (9 characters + 6 locations) or should D-03's normalization special-case INT./EXT. pairs to preserve 7 locations?**
    - What we know: the locked rules as written produce 6 location slots when run against the actual current beat list (see A5).
