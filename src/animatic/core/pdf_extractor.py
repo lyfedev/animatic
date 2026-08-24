@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import re
+from itertools import islice
 from pathlib import Path
 
 import pdfplumber
 
-# Matches screenplay scene headings like:
+# Matches a numbered screenplay scene heading. The scene number appears at
+# BOTH ends of the line, which is what makes this safe to match loosely:
 #   1 INT. BLUE DOOR FIGHT CLUB - NIGHT 1
 #   5 EXT. STREET - NIGHT 5
-# Scene number appears at both start and end of the line.
+#   2 SUPERIMPOSE OVER ACTION... "NOVEMBER 12, 1975 - 2
+#
+# Deliberately NOT restricted to INT./EXT. Scene 2 of Rocky is a SUPERIMPOSE
+# title card, and an INT/EXT-only pattern silently swallowed it into scene 1 —
+# which shifted the whole demo range to 1,3-9 and dropped scene 2 entirely.
 _HEADING_RE = re.compile(
-    r"^(\d+)\s+((?:INT|EXT)\..*?)\s+\1\s*$",
-    re.IGNORECASE | re.MULTILINE,
+    r"^(\d+)\s+(\S.*?)\s+\1\s*$",
+    re.MULTILINE,
 )
 
 
@@ -23,24 +29,28 @@ def extract_scenes(
 ) -> dict[int, str]:
     """Extract raw text for the first N scenes from a screenplay PDF.
 
-    Scene numbers in screenplays are not always contiguous (e.g. Rocky
-    skips scene 2). This function takes the first N scenes by order of
-    appearance, not by scene number value.
+    For the demo this returns Rocky scenes 1-8, which is the fixed content
+    set. Scene 2 is a SUPERIMPOSE title card rather than an INT/EXT slug —
+    it is a real scene and must be present.
+
+    Scenes are taken in order of appearance in the document, not by scene
+    number value, so a renumbered insert cannot be pulled forward.
 
     Args:
         pdf_path: Path to the PDF file.
         first_n: Number of scenes to extract from the start (default: 8).
 
     Returns:
-        dict mapping scene_number → raw scene text (heading included).
+        dict mapping scene_number → raw scene text (heading included),
+        in order of appearance.
     """
     pdf_path = Path(pdf_path)
     full_text = _extract_full_text(pdf_path)
     scene_map = _split_by_scene(full_text)
 
-    # Take first N scenes in order of appearance
-    sorted_scenes = sorted(scene_map.items())
-    return dict(sorted_scenes[:first_n])
+    # _split_by_scene builds the dict in match order, so insertion order
+    # is already appearance order — slice it without re-sorting.
+    return dict(islice(scene_map.items(), first_n))
 
 
 def _extract_full_text(pdf_path: Path) -> str:
