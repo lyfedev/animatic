@@ -17,9 +17,14 @@ slots (D-03) — dropping the prefix would wrongly merge scene 6's
 `EXT. ROCKY'S APARTMENT` with scene 8's `INT. ROCKY'S APARTMENT`, which are
 different pictures.
 
+Characters are resolved from the union of each beat's `characters[]` and
+every `dialogue[].character` — the display name is copied exactly as the
+script writes it, and the slot_id is the same `_slugify` normalisation used
+for locations (D-01: no hand-curated alias list either way).
+
 This module builds out incrementally across Phase 3's three plan tasks:
-Task 1 (this pass) resolves locations only, far enough to prove the one
-tracer slot (`int_blue_door_fight_club`). Task 2 adds character resolution
+Task 1 resolved locations only, far enough to prove the one tracer slot
+(`int_blue_door_fight_club`). Task 2 (this pass) adds character resolution
 to reach the full 16-slot registry. Task 3 fills the derived priority/art/
 voice axes and the voice-collision guard.
 """
@@ -145,11 +150,11 @@ def resolve_slots(beats: dict, pdf_path: str | Path) -> list[Slot]:
             flag for "was this a real slug" (D-03a).
 
     Returns:
-        Location slots only, on this Task 1 pass — enough to prove the
-        `int_blue_door_fight_club` tracer slot end to end. Task 2 adds
-        character resolution to reach the full 16-slot registry.
+        Location slots then character slots — 16 in total. Priority ranks,
+        art slots and voice ids are still at their dataclass defaults on
+        this Task 2 pass; Task 3 fills them.
     """
-    return _resolve_locations(beats, Path(pdf_path))
+    return _resolve_locations(beats, Path(pdf_path)) + _resolve_characters(beats)
 
 
 def _resolve_locations(beats: dict, pdf_path: Path) -> list[Slot]:
@@ -275,6 +280,42 @@ def _cluster_near_matches(
                     f"(difflib ratio {ratio:.2f} — RESEARCH §Don't Hand-Roll fallback)"
                 )
     return final_key_for, notes
+
+
+def _resolve_characters(beats: dict) -> list[Slot]:
+    """Resolve every character referenced in `beats` into one slot each.
+
+    The name set per beat is the union of the beat's `characters[]` and
+    every `dialogue[].character` — a beat where a character is present but
+    silent still counts. Each character gets exactly one slot; no alias
+    list (D-01), so the slot_id is just `_slugify` of the exact display
+    name the script uses.
+    """
+    all_beats = beats["beats"]
+    beat_ids_by_name: dict[str, list[str]] = {}
+
+    for b in all_beats:
+        names = set(b.get("characters", []))
+        for line in b.get("dialogue", []):
+            character = line.get("character")
+            if character:
+                names.add(character)
+        for name in names:
+            beat_ids_by_name.setdefault(name, []).append(b["beat_id"])
+
+    slots: list[Slot] = []
+    for name in sorted(beat_ids_by_name):
+        slots.append(
+            Slot(
+                slot_id=_slugify(name),
+                slot_type="character",
+                display_name=name,
+                source_names=[name],
+                merge_reason=f"single character name {name!r}, no merge (D-01)",
+                beat_ids=beat_ids_by_name[name],
+            )
+        )
+    return slots
 
 
 def _slugify(text: str) -> str:
