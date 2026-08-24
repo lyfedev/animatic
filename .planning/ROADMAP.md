@@ -1,150 +1,199 @@
-# Animatic — ROADMAP.md
+# Roadmap: Animatic
 
-## Milestone 1 — Actor
-**Goal:** Minimum functionality — can we generate the first animatics?
-Generate a complete animatic from the Rocky script: beat parsing, panels, audio, motion, assembled video. Local or internal — no external-facing UI required.
+## Overview
 
----
+From a screenplay PDF to a watchable rough cut, then to a hosted demo that swaps real
+footage in shot by shot. Milestone 1 (Actor) builds the generation pipeline end to end —
+beats, assets, panels, audio, motion, assembly — until a Rocky animatic plays. Milestone 2
+(Box Office) wraps that pipeline in a public UI with live parsing, live footage
+replacement, and the submission deliverables.
 
-### Phase 1 — Project Scaffold & Infrastructure
-**Goal:** Repo, Python project structure, AWS hosting skeleton, CI, dependency setup.
+## Phases
 
-- Python project layout (`src/`, `tests/`, `scripts/`)
-- AWS infrastructure: S3 buckets, ECS or Lambda hosting, CloudFront CDN
-- `.env` / secrets management for Google Cloud credentials
-- Basic FastAPI or Flask web server, health-check endpoint live at public URL
-- README with run-from-scratch instructions
+**Milestone 1 — Actor:** minimum functionality, can we generate the first animatics?
+**Milestone 2 — Box Office:** footage replacement and an external-facing demo.
 
-**Verification:** `curl <hosted-url>/health` returns 200. Repo is public with license badge.
+- [x] **Phase 1: Project Scaffold & Infrastructure** - Repo, Python layout, AWS hosting skeleton, CI, health endpoint
+- [x] **Phase 2: Beat Parser** - Rocky PDF to a structured beat list with machine-readable reasons
+- [ ] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
+- [ ] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
+- [ ] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
+- [ ] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
+- [ ] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
+- [ ] **Phase 8: Footage Replacement & Per-Shot State** - Live swap of animatic shots for real footage
+- [ ] **Phase 9: Web UI & Demo Shell** - Hosted demo, three-state render, real progress indicators
+- [ ] **Phase 10: Polish, Submission, Demo Video** - Everything required for submission
 
----
+## Phase Details
 
-### Phase 2 — Beat Parser
-**Goal:** Ingest Rocky PDF → structured beat list with machine-readable reasons.
+### Phase 1: Project Scaffold & Infrastructure
+**Goal**: Repo, Python project structure, AWS hosting skeleton, CI, dependency setup.
+**Depends on**: Nothing (first phase)
+**Requirements**: NFR-01, NFR-02
+**Success Criteria** (what must be TRUE):
+  1. `curl <hosted-url>/health` returns 200 from a public URL
+  2. Repository is public with an OSI-approved license detectable in the About section
+  3. A fresh clone runs from the README instructions alone
+  4. AWS infrastructure provisions S3 storage and container hosting
+**Plans**: 1 plan
 
-- PDF ingestion (PyMuPDF or pdfplumber)
-- Scene segmentation (scenes 1–8)
-- Beat extraction per scene, density-aware (action / dialogue / establishing)
-- Every beat carries: beat_id, scene, type, content, reason, duration_estimate
-- Beat list serialised to JSON
-- Unit tests for parser with Rocky scenes 1–8
+Plans:
+- [x] 01-01: Scaffold, infra, CI, health endpoint
 
-**Verification:** `parse_beats(rocky-1976.pdf, scenes=[1..8])` returns valid JSON beat list, all beats have `reason` field.
+### Phase 2: Beat Parser
+**Goal**: Ingest Rocky PDF into a structured beat list with machine-readable reasons.
+**Depends on**: Phase 1
+**Requirements**: FR-01, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Parsing the Rocky PDF returns a valid JSON beat list for scenes 1-8
+  2. Every beat carries beat_id, scene, type, content, reason and duration
+  3. Beat density varies with content — action scenes yield more beats than establishing
+  4. Every spoken line in the script appears in the beat list, attributed to one speaker
+  5. Shot duration is derived from the script, not guessed, and records why
+**Plans**: 1 plan
 
----
+Plans:
+- [x] 02-01: PDF extractor, Gemini beat extractor, assembler, S3 writer, API
 
-### Phase 3 — Asset Management & Manifest
-**Goal:** Named asset slots, temp-art fallback, manifest output.
+### Phase 3: Asset Management & Manifest
+**Goal**: Named asset slots, temp-art fallback, manifest output.
+**Depends on**: Phase 2
+**Requirements**: FR-02, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Running with zero reference art produces a complete asset manifest with every slot filled by generated temp art
+  2. Every character and location in the beat list resolves to exactly one slot
+  3. Supplied reference art is ingested and takes priority over generated art
+  4. Replacing a slot file and re-running regenerates the panels that use it
+  5. Each manifest entry records slot name, priority, source and reason
+**Plans**: TBD
 
-- Asset slot registry (character, location slots)
-- Reference art ingestion from supplied files
-- Temp-art generation via Google Imagen for empty slots
-- Asset manifest: slot name, priority, source (supplied / generated), reason
-- Slot-file replacement triggers re-generation of dependent panels
+Plans:
+- [ ] 03-01: TBD (set during planning)
 
-**Verification:** Running with zero reference art produces a complete asset manifest with all slots filled by generated temp art.
+### Phase 4: Panel Generation
+**Goal**: Black line-art panel per beat, consistent style, facial feature rules.
+**Depends on**: Phase 3
+**Requirements**: FR-03, NFR-03, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Every beat in scenes 1-8 has a generated panel
+  2. Panels are black line art on white with consistent line weight
+  3. Wide and medium shots carry no facial features; close-ups carry brow, mouth and nose only
+  4. Each panel records beat_id, asset slots used, prompt and reason
+  5. Re-running with unchanged beats and assets reuses cached panels
+**Plans**: TBD
 
----
+Plans:
+- [ ] 04-01: TBD (set during planning)
 
-### Phase 4 — Panel Generation
-**Goal:** Black line-art panel per beat, consistent style, facial feature rules.
+### Phase 5: Audio Synthesis
+**Goal**: Synthetic dialogue, action narration, and music cues per beat.
+**Depends on**: Phase 2
+**Requirements**: FR-05, NFR-03, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Every beat has an audio asset keyed to its beat_id
+  2. Every speaking part is voiced, with a consistent voice per character
+  3. Beats with no dialogue carry narration of their action lines
+  4. Music is generated where the script specifies a music cue
+  5. No beat's audio is longer than the beat's duration
+**Plans**: TBD
 
-- Google Imagen prompt pipeline for line-art panels
-- Style enforcement: black line art on white, consistent weight
-- Facial feature rule: wide/medium = no features; close-up = brow/mouth/nose only
-- Each panel carries: beat_id, asset_slots_used, prompt, reason
-- Panel caching (re-use if beat + assets unchanged)
+Plans:
+- [ ] 05-01: TBD (set during planning)
 
-**Verification:** All beats in scenes 1–8 have a panel. Style audit passes visual checklist.
+### Phase 6: Motion Generation
+**Goal**: Cost-constrained motion applied to selected high-value beats.
+**Depends on**: Phase 4
+**Requirements**: FR-04, NFR-03, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Motion is applied to no more than the budgeted number of beats
+  2. Every beat carries motion true/false and a motion reason
+  3. Action beats are prioritised over dialogue and establishing beats
+  4. A beat falls back to its still panel when motion fails or exceeds budget
+**Plans**: TBD
 
----
+Plans:
+- [ ] 06-01: TBD (set during planning)
 
-### Phase 5 — Audio Synthesis
-**Goal:** Synthetic dialogue, action narration, music cues.
+### Phase 7: Video Assembly
+**Goal**: Timed video cut from panels, motion and audio — the first watchable animatic.
+**Depends on**: Phase 4, Phase 5, Phase 6
+**Requirements**: FR-06, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Assembling the beat list produces a watchable MP4 of Rocky scenes 1-8
+  2. Each shot runs for its beat's duration
+  3. Audio stays in sync with its shot and is never clipped
+  4. Shot duration carries a machine-readable reason
+**Plans**: TBD
 
-- Dialogue synthesis via Google TTS (per speaking part, consistent voice per character)
-- Action narration for beats with no dialogue
-- Music generation where script specifies a music cue
-- Audio assets per beat, keyed to beat_id
+Plans:
+- [ ] 07-01: TBD (set during planning)
 
-**Verification:** Every beat has an audio asset. Dialogue beats use character voice; non-dialogue beats use narrator voice.
+### Phase 8: Footage Replacement & Per-Shot State
+**Goal**: Live swap of animatic shots for real footage, rebuilding the cut.
+**Depends on**: Phase 7
+**Requirements**: FR-07, FR-08, NFR-04
+**Success Criteria** (what must be TRUE):
+  1. Adding a beat-tagged MP4 and re-running produces an updated cut with that shot replaced
+  2. Beat number is read from the filename, never inferred from the footage
+  3. `state.json` reports per-shot state and the correct percentage of the cut that is real
+  4. Removing a footage file restores the animatic shot on the next run
+**Plans**: TBD
 
----
+Plans:
+- [ ] 08-01: TBD (set during planning)
 
-### Phase 6 — Motion Generation (Selected Beats)
-**Goal:** Cost-constrained motion applied to selected high-value beats.
+### Phase 9: Web UI & Demo Shell
+**Goal**: Hosted demo UI — three-state render, real progress indicators, cache disclosure.
+**Depends on**: Phase 8
+**Requirements**: DR-01, DR-02, DR-03, DR-04, NFR-01
+**Success Criteria** (what must be TRUE):
+  1. An anonymous visitor at the hosted URL can trigger a live beat parse
+  2. An anonymous visitor can swap a shot and see the cut rebuild
+  3. All three scene states render: all panels, partial footage, all footage
+  4. Progress indicators are driven by real backend events, never simulated
+  5. The UI discloses when media is pre-computed and cached
+**Plans**: TBD
 
-- Beat selection algorithm (action beats prioritised, budget cap)
-- Motion generation via Google Veo or equivalent
-- Selection and skip reasons recorded per beat
-- Fallback: still panel if motion fails or over budget
+Plans:
+- [ ] 09-01: TBD (set during planning)
 
-**Verification:** Motion applied to ≤N selected beats. Every beat has `motion: true/false` and `motion_reason`.
+### Phase 10: Polish, Submission, Demo Video
+**Goal**: Everything required for submission.
+**Depends on**: Phase 9
+**Requirements**: NFR-02, NFR-05
+**Success Criteria** (what must be TRUE):
+  1. Three pre-rendered videos exist: no footage, partial footage, full footage
+  2. A demo video of three minutes or less shows the system functioning
+  3. A written description covers features, technologies, data sources and findings
+  4. The README is verified to run from scratch on a clean machine
+  5. All five Definition of Done items are checked off
+**Plans**: TBD
 
----
+Plans:
+- [ ] 10-01: TBD (set during planning)
 
-### Phase 7 — Video Assembly
-**Goal:** Timed video cut from panels, motion, audio. First complete watchable animatic.
+## Progress
 
-- FFmpeg-based assembly pipeline
-- Shot duration from beat duration estimate
-- Concatenate: panels / motion clips / audio per beat
-- Output: single video file (MP4)
-- Shot duration carries machine-readable reason
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
-**Verification:** `assemble(beat_list)` produces a watchable MP4 of Rocky scenes 1–8. **Milestone 1 complete.**
-
----
-
-## Milestone 2 — Box Office
-**Goal:** Add footage replacement and a real external-facing demo interface — submission-ready.
-Takes the working animatic pipeline and wraps it in a hosted public UI with live beat parsing, shot swap, three-state render, and all submission deliverables.
-
----
-
-### Phase 8 — Footage Replacement & Per-Shot State
-**Goal:** Live swap of animatic shots with real footage; rebuild cut.
-
-- Footage ingest: filename-based beat tagging
-- Per-shot state tracker: animatic | footage, % real
-- Re-render pipeline: drop tagged shots, insert footage, reassemble
-- Per-shot state manifest output
-
-**Verification:** Adding a beat-tagged MP4 file and re-running produces an updated cut with that shot replaced. `state.json` shows correct % real.
-
----
-
-### Phase 9 — Web UI & Demo Shell
-**Goal:** Hosted demo UI — three-state render, progress indicators, cache disclosure.
-
-- Web UI (FastAPI + lightweight frontend)
-- Scene state selector: all panels / partial footage / all footage
-- Live beat parsing triggered from UI
-- Live footage swap triggered from UI
-- Progress indicators driven by real backend events (SSE or WebSocket)
-- Cache disclosure banner if media is pre-computed
-- Anonymous access, no auth
-
-**Verification:** Anonymous visitor at hosted URL can trigger live beat parse, swap a shot, and view all three scene states.
-
----
-
-### Phase 10 — Polish, Submission, Demo Video
-**Goal:** Everything required for submission.
-
-- Three pre-rendered videos: no footage / partial / full footage
-- Demo video ≤3 minutes
-- Written description (features, tech, data sources, findings)
-- README verified: runs from scratch
-- Repository public, license confirmed in About
-- Resolve IBM Bob evidence question with organisers
-
-**Verification:** All 5 Definition of Done items checked off.
-
----
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Project Scaffold & Infrastructure | 1/1 | Complete (1 gap: no CDN) | 2026-08-23 |
+| 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
+| 3. Asset Management & Manifest | 0/TBD | Not started | - |
+| 4. Panel Generation | 0/TBD | Not started | - |
+| 5. Audio Synthesis | 0/TBD | Not started | - |
+| 6. Motion Generation | 0/TBD | Not started | - |
+| 7. Video Assembly | 0/TBD | Not started | - |
+| 8. Footage Replacement & Per-Shot State | 0/TBD | Not started | - |
+| 9. Web UI & Demo Shell | 0/TBD | Not started | - |
+| 10. Polish, Submission, Demo Video | 0/TBD | Not started | - |
 
 ## Backlog (deferred)
+
 - Multi-script support
 - User-supplied script upload
 - Shot size / camera direction inference
 - Coverage planning
+- CloudFront CDN and TLS for the hosted URL (Phase 1 gap — currently HTTP only)
