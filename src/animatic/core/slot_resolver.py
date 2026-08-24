@@ -22,10 +22,21 @@ every `dialogue[].character` — the display name is copied exactly as the
 script writes it, and the slot_id is the same `_slugify` normalisation used
 for locations (D-01: no hand-curated alias list either way).
 
+Priority (D-10/D-11) is a single global ranking across every slot by its
+share of total screen time — how much of the finished cut depends on it —
+not a generation order or a cost band.
+
+Art slots and voice identities are separate axes and do not collapse the
+same way (D-04): a minor character (D-05, <= 2 beats) shares a generic art
+slot with the other minor characters, but every character keeps a
+project-wide-unique `voice_id` (D-06/D-07), so two characters who speak in
+the same scene can never be given the same voice — `assert_no_voice_collisions`
+is the regression guard for that invariant.
+
 This module builds out incrementally across Phase 3's three plan tasks:
 Task 1 resolved locations only, far enough to prove the one tracer slot
-(`int_blue_door_fight_club`). Task 2 (this pass) adds character resolution
-to reach the full 16-slot registry. Task 3 fills the derived priority/art/
+(`int_blue_door_fight_club`). Task 2 added character resolution to reach the
+full 16-slot registry. Task 3 (this pass) fills the derived priority/art/
 voice axes and the voice-collision guard.
 """
 
@@ -63,6 +74,15 @@ _NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
 # collapses every real duplicate to an exact key. Kept as insurance; any pair
 # it merges is recorded in that slot's merge_reason.
 _NEAR_MATCH_RATIO = 0.92
+
+# A character appearing in this many beats or fewer maps to a shared generic
+# art slot rather than getting bespoke generated art (D-05). Matches all four
+# of D-05's own named examples (FIGHTER #1 at exactly 2 beats is the boundary
+# case) and correctly leaves WOMAN (3 beats) bespoke despite the
+# function-style name.
+MINOR_CHARACTER_MAX_BEATS = 2
+
+GENERIC_MINOR_ART_SLOT_ID = "generic_minor_character"
 
 
 @dataclass
@@ -150,11 +170,19 @@ def resolve_slots(beats: dict, pdf_path: str | Path) -> list[Slot]:
             flag for "was this a real slug" (D-03a).
 
     Returns:
-        Location slots then character slots — 16 in total. Priority ranks,
-        art slots and voice ids are still at their dataclass defaults on
-        this Task 2 pass; Task 3 fills them.
+        All 16 slots, priority-ranked (ranks 1..16, no gaps or ties), with
+        the art axis (art_slot_id/art_shared_with/is_minor) and the voice
+        axis (voice_id) both resolved. Raises ValueError if two characters
+        who speak in the same scene were somehow given the same voice_id
+        (assert_no_voice_collisions) — structurally unreachable given every
+        character's voice_id is unique project-wide, but checked anyway as
+        a regression guard (D-06).
     """
-    return _resolve_locations(beats, Path(pdf_path)) + _resolve_characters(beats)
+    slots = _resolve_locations(beats, Path(pdf_path)) + _resolve_characters(beats)
+    _apply_priority(slots, beats)
+    _apply_art_and_voice(slots)
+    assert_no_voice_collisions(beats, slots)
+    return slots
 
 
 def _resolve_locations(beats: dict, pdf_path: Path) -> list[Slot]:
@@ -330,3 +358,98 @@ def _slugify(text: str) -> str:
     text = text.lower().replace("'", "")
     text = _NON_ALNUM_RE.sub("_", text)
     return text.strip("_")
+
+
+def _apply_priority(slots: list[Slot], beats: dict) -> None:
+    """Rank every slot by its share of total screen time (D-10/D-11).
+
+    Priority is how much of the finished cut depends on the slot, not a
+    generation order or a cost band — a single global ordering across
+    characters and locations, ranks 1..16 with no gaps or ties, broken by
+    beat count then slot_id when seconds tie exactly.
+    """
+    beats_by_id = {b["beat_id"]: b for b in beats["beats"]}
+    total_secs = beats["total_duration_secs"]
+
+    for slot in slots:
+        durations = [beats_by_id[bid]["duration_secs"] for bid in slot.beat_ids]
+        slot.beats = len(slot.beat_ids)
+        slot.duration_secs = round(sum(durations), 1)
+        slot.share_pct = (
+            round(slot.duration_secs / total_secs * 100, 1) if total_secs else 0.0
+        )
+
+    ranked = sorted(slots, key=lambda s: (-s.duration_secs, -s.beats, s.slot_id))
+    for rank, slot in enumerate(ranked, start=1):
+        slot.priority_rank = rank
+        slot.priority_reason = (
+            f"{slot.beats} beat(s), {slot.duration_secs}s, "
+            f"{slot.share_pct}% of the {total_secs}s total cut — "
+            f"rank {rank} of {len(slots)} by share of screen time (D-10/D-11)"
+        )
+
+
+def _apply_art_and_voice(slots: list[Slot]) -> None:
+    """Fill the art axis (D-05) and the voice axis (D-04/D-06/D-07).
+
+    These are separate axes and do not collapse the same way: minor
+    characters share one generic art slot but each keeps a distinct
+    voice_id, so two minor characters who speak to each other never share a
+    voice.
+    """
+    minor_characters = [
+        s
+        for s in slots
+        if s.slot_type == "character" and s.beats <= MINOR_CHARACTER_MAX_BEATS
+    ]
+    minor_ids = {s.slot_id for s in minor_characters}
+
+    for slot in slots:
+        if slot.slot_type == "location":
+            slot.is_minor = None
+            slot.art_slot_id = slot.slot_id
+            slot.art_shared_with = []
+            slot.voice_id = None
+            continue
+
+        slot.is_minor = slot.slot_id in minor_ids
+        if slot.is_minor:
+            slot.art_slot_id = GENERIC_MINOR_ART_SLOT_ID
+            slot.art_shared_with = sorted(minor_ids - {slot.slot_id})
+        else:
+            slot.art_slot_id = slot.slot_id
+            slot.art_shared_with = []
+        # Globally unique per character — sufficient to make an in-scene
+        # voice collision structurally impossible (D-06).
+        slot.voice_id = slot.slot_id
+
+
+def assert_no_voice_collisions(beats: dict, slots: list[Slot]) -> None:
+    """Raise if two characters who speak in the same scene share a voice_id.
+
+    A regression guard, not decoration (D-06): FIGHTER #1 and FIGHTER #2
+    talk to each other in scene 3, and sharing the generic art slot is fine
+    but sharing a voice is not — the exchange would become one person
+    talking to themselves. This is what stops a later phase pooling voices
+    across characters from silently breaking that scene.
+    """
+    voice_id_by_name: dict[str, str | None] = {}
+    for slot in slots:
+        if slot.slot_type == "character":
+            for name in slot.source_names:
+                voice_id_by_name[name] = slot.voice_id
+
+    speakers_by_scene: dict[int, set[str]] = {}
+    for b in beats["beats"]:
+        for line in b.get("dialogue", []):
+            character = line.get("character")
+            if character:
+                speakers_by_scene.setdefault(b["scene"], set()).add(character)
+
+    for scene, speakers in speakers_by_scene.items():
+        voice_ids = [voice_id_by_name.get(name) for name in speakers]
+        if len(voice_ids) != len(set(voice_ids)):
+            raise ValueError(
+                f"voice collision in scene {scene}: {sorted(speakers)} resolve "
+                f"to non-distinct voice_ids {voice_ids}"
+            )
