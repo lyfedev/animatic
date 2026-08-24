@@ -18,9 +18,21 @@ env/
 !.env.example
 
 # AWS / GCloud credentials
+# Repo is public — deny-by-default on credential-shaped files.
+# GCP service account keys download as <project>-<keyid>.json, so match that
+# shape too, not just the files we happened to name ourselves.
 .aws/
 service-account*.json
 gcloud-credentials*.json
+*-service-account*.json
+animatic-*-*.json
+*.pem
+*.p12
+credentials.json
+client_secret*.json
+!.planning/config.json
+!infra/cdk.json
+!infra/cdk.context.json
 
 # IDE
 .vscode/
