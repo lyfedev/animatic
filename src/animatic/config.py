@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-1"
     google_cloud_project: str = ""
     google_application_credentials: str = ""
+    google_api_key: str = ""
+    gemini_model: str = "gemini-3.6-flash"
+    media_bucket: str = "animatic-media-628818"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
