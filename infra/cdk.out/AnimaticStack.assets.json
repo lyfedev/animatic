@@ -1,0 +1,21 @@
+{
+  "version": "54.0.0",
+  "files": {
+    "843385f115146055a4dba09ffee70de85d4dd1d798b4d1325732736d59ad687d": {
+      "displayName": "AnimaticStack Template",
+      "source": {
+        "path": "AnimaticStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "339482628818-us-east-1-b03b9a29": {
+          "bucketName": "cdk-hnb659fds-assets-339482628818-us-east-1",
+          "objectKey": "843385f115146055a4dba09ffee70de85d4dd1d798b4d1325732736d59ad687d.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::339482628818:role/cdk-hnb659fds-file-publishing-role-339482628818-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

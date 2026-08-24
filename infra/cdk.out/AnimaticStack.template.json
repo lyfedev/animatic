@@ -1,0 +1,1124 @@
+{
+ "Resources": {
+  "AnimaticEcr2BE83171": {
+   "Type": "AWS::ECR::Repository",
+   "Properties": {
+    "RepositoryName": "animatic-ecr"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticEcr/Resource"
+   }
+  },
+  "AnimaticMedia1E5BC9B4": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketName": "animatic-media-628818",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticMedia/Resource"
+   }
+  },
+  "AnimaticVpcCDD192B6": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/Resource"
+   }
+  },
+  "AnimaticVpcPublicSubnet1Subnet9ACFE677": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/Subnet"
+   }
+  },
+  "AnimaticVpcPublicSubnet1RouteTable6283A2C3": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "AnimaticVpcPublicSubnet1RouteTableAssociation17D4B813": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPublicSubnet1RouteTable6283A2C3"
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPublicSubnet1Subnet9ACFE677"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "AnimaticVpcPublicSubnet1DefaultRouteDF71F503": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "AnimaticVpcIGW500F1A49"
+    },
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPublicSubnet1RouteTable6283A2C3"
+    }
+   },
+   "DependsOn": [
+    "AnimaticVpcVPCGW3D2BAB64"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "AnimaticVpcPublicSubnet1EIP7195096A": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/EIP"
+   }
+  },
+  "AnimaticVpcPublicSubnet1NATGateway9E1EB88A": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "AnimaticVpcPublicSubnet1EIP7195096A",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPublicSubnet1Subnet9ACFE677"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "AnimaticVpcPublicSubnet1DefaultRouteDF71F503",
+    "AnimaticVpcPublicSubnet1RouteTableAssociation17D4B813"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet1/NATGateway"
+   }
+  },
+  "AnimaticVpcPublicSubnet2Subnet0CBB7247": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.64.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/Subnet"
+   }
+  },
+  "AnimaticVpcPublicSubnet2RouteTableA5C1B38F": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "AnimaticVpcPublicSubnet2RouteTableAssociation16DE434C": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPublicSubnet2RouteTableA5C1B38F"
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPublicSubnet2Subnet0CBB7247"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "AnimaticVpcPublicSubnet2DefaultRoute04DA1B87": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "AnimaticVpcIGW500F1A49"
+    },
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPublicSubnet2RouteTableA5C1B38F"
+    }
+   },
+   "DependsOn": [
+    "AnimaticVpcVPCGW3D2BAB64"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "AnimaticVpcPublicSubnet2EIP24F1FA8A": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/EIP"
+   }
+  },
+  "AnimaticVpcPublicSubnet2NATGateway17BD1113": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "AnimaticVpcPublicSubnet2EIP24F1FA8A",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPublicSubnet2Subnet0CBB7247"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PublicSubnet2"
+     }
+    ]
+   },
+   "DependsOn": [
+    "AnimaticVpcPublicSubnet2DefaultRoute04DA1B87",
+    "AnimaticVpcPublicSubnet2RouteTableAssociation16DE434C"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PublicSubnet2/NATGateway"
+   }
+  },
+  "AnimaticVpcPrivateSubnet1Subnet030F89C8": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.128.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet1/Subnet"
+   }
+  },
+  "AnimaticVpcPrivateSubnet1RouteTableCF90AF1F": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet1/RouteTable"
+   }
+  },
+  "AnimaticVpcPrivateSubnet1RouteTableAssociation09634EDB": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPrivateSubnet1RouteTableCF90AF1F"
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPrivateSubnet1Subnet030F89C8"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "AnimaticVpcPrivateSubnet1DefaultRouteB4037B0E": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "AnimaticVpcPublicSubnet1NATGateway9E1EB88A"
+    },
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPrivateSubnet1RouteTableCF90AF1F"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "AnimaticVpcPrivateSubnet2SubnetA903A008": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.192.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet2/Subnet"
+   }
+  },
+  "AnimaticVpcPrivateSubnet2RouteTable4CBBA43A": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet2/RouteTable"
+   }
+  },
+  "AnimaticVpcPrivateSubnet2RouteTableAssociation3B4169DE": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPrivateSubnet2RouteTable4CBBA43A"
+    },
+    "SubnetId": {
+     "Ref": "AnimaticVpcPrivateSubnet2SubnetA903A008"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "AnimaticVpcPrivateSubnet2DefaultRouteAF8BB018": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "AnimaticVpcPublicSubnet2NATGateway17BD1113"
+    },
+    "RouteTableId": {
+     "Ref": "AnimaticVpcPrivateSubnet2RouteTable4CBBA43A"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "AnimaticVpcIGW500F1A49": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AnimaticStack/AnimaticVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/IGW"
+   }
+  },
+  "AnimaticVpcVPCGW3D2BAB64": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "AnimaticVpcIGW500F1A49"
+    },
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticVpc/VPCGW"
+   }
+  },
+  "AnimaticClusterA023F421": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "animatic-cluster"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticCluster/Resource"
+   }
+  },
+  "AnimaticTaskRoleBF135BC3": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "RoleName": "animatic-task-role"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticTaskRole/Resource"
+   }
+  },
+  "AnimaticTaskRoleDefaultPolicy2B8075BA": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "AnimaticMedia1E5BC9B4",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "AnimaticMedia1E5BC9B4",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:ssm:us-east-1:339482628818:parameter/animatic/*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "AnimaticTaskRoleDefaultPolicy2B8075BA",
+    "Roles": [
+     {
+      "Ref": "AnimaticTaskRoleBF135BC3"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticTaskRole/DefaultPolicy/Resource"
+   }
+  },
+  "AnimaticServiceLBE99C1AAF": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Name": "animatic-alb",
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "AnimaticServiceLBSecurityGroupF364FF38",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "AnimaticVpcPublicSubnet1Subnet9ACFE677"
+     },
+     {
+      "Ref": "AnimaticVpcPublicSubnet2Subnet0CBB7247"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "AnimaticVpcPublicSubnet1DefaultRouteDF71F503",
+    "AnimaticVpcPublicSubnet1RouteTableAssociation17D4B813",
+    "AnimaticVpcPublicSubnet2DefaultRoute04DA1B87",
+    "AnimaticVpcPublicSubnet2RouteTableAssociation16DE434C"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/LB/Resource"
+   }
+  },
+  "AnimaticServiceLBSecurityGroupF364FF38": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB AnimaticStackAnimaticServiceLBEE1A4D5A",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/LB/SecurityGroup/Resource"
+   }
+  },
+  "AnimaticServiceLBSecurityGrouptoAnimaticStackAnimaticServiceSecurityGroup7CFE435B80001048EACF": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AnimaticServiceSecurityGroup7CB8BD7D",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "AnimaticServiceLBSecurityGroupF364FF38",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8000
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/LB/SecurityGroup/to AnimaticStackAnimaticServiceSecurityGroup7CFE435B:8000"
+   }
+  },
+  "AnimaticServiceLBPublicListener4ABB4D7A": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "AnimaticServiceLBPublicListenerECSGroup976ECC4E"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "AnimaticServiceLBE99C1AAF"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/LB/PublicListener/Resource"
+   }
+  },
+  "AnimaticServiceLBPublicListenerECSGroup976ECC4E": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckPath": "/health",
+    "Port": 80,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/LB/PublicListener/ECSGroup/Resource"
+   }
+  },
+  "AnimaticServiceTaskDef0805EE53": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "ENVIRONMENT",
+        "Value": "production"
+       },
+       {
+        "Name": "AWS_REGION",
+        "Value": "us-east-1"
+       }
+      ],
+      "Essential": true,
+      "Image": {
+       "Fn::Join": [
+        "",
+        [
+         {
+          "Fn::Select": [
+           4,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "AnimaticEcr2BE83171",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".dkr.ecr.",
+         {
+          "Fn::Select": [
+           3,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "AnimaticEcr2BE83171",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".",
+         {
+          "Ref": "AWS::URLSuffix"
+         },
+         "/",
+         {
+          "Ref": "AnimaticEcr2BE83171"
+         },
+         ":latest"
+        ]
+       ]
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "AnimaticServiceTaskDefwebLogGroupB9D1806F"
+        },
+        "awslogs-stream-prefix": "AnimaticService",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "web",
+      "PortMappings": [
+       {
+        "ContainerPort": 8000,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "1024",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "AnimaticServiceTaskDefExecutionRoleAE60503D",
+      "Arn"
+     ]
+    },
+    "Family": "AnimaticStackAnimaticServiceTaskDefA79FCEC9",
+    "Memory": "2048",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "AnimaticTaskRoleBF135BC3",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/TaskDef/Resource"
+   }
+  },
+  "AnimaticServiceTaskDefwebLogGroupB9D1806F": {
+   "Type": "AWS::Logs::LogGroup",
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/TaskDef/web/LogGroup/Resource"
+   }
+  },
+  "AnimaticServiceTaskDefExecutionRoleAE60503D": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/TaskDef/ExecutionRole/Resource"
+   }
+  },
+  "AnimaticServiceTaskDefExecutionRoleDefaultPolicy499825D8": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "AnimaticEcr2BE83171",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "ecr:GetAuthorizationToken",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "AnimaticServiceTaskDefwebLogGroupB9D1806F",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "AnimaticServiceTaskDefExecutionRoleDefaultPolicy499825D8",
+    "Roles": [
+     {
+      "Ref": "AnimaticServiceTaskDefExecutionRoleAE60503D"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "AnimaticService557662BB": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "AnimaticClusterA023F421"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "web",
+      "ContainerPort": 8000,
+      "TargetGroupArn": {
+       "Ref": "AnimaticServiceLBPublicListenerECSGroup976ECC4E"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "AnimaticServiceSecurityGroup7CB8BD7D",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "AnimaticVpcPrivateSubnet1Subnet030F89C8"
+       },
+       {
+        "Ref": "AnimaticVpcPrivateSubnet2SubnetA903A008"
+       }
+      ]
+     }
+    },
+    "ServiceName": "animatic-service",
+    "TaskDefinition": {
+     "Ref": "AnimaticServiceTaskDef0805EE53"
+    }
+   },
+   "DependsOn": [
+    "AnimaticServiceLBPublicListenerECSGroup976ECC4E",
+    "AnimaticServiceLBPublicListener4ABB4D7A",
+    "AnimaticTaskRoleDefaultPolicy2B8075BA",
+    "AnimaticTaskRoleBF135BC3"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/Service/Service"
+   }
+  },
+  "AnimaticServiceSecurityGroup7CB8BD7D": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "AnimaticStack/AnimaticService/Service/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AnimaticVpcCDD192B6"
+    }
+   },
+   "DependsOn": [
+    "AnimaticTaskRoleDefaultPolicy2B8075BA",
+    "AnimaticTaskRoleBF135BC3"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/Service/SecurityGroup/Resource"
+   }
+  },
+  "AnimaticServiceSecurityGroupfromAnimaticStackAnimaticServiceLBSecurityGroup02A3EC0C800093329CBC": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "AnimaticServiceSecurityGroup7CB8BD7D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AnimaticServiceLBSecurityGroupF364FF38",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8000
+   },
+   "DependsOn": [
+    "AnimaticTaskRoleDefaultPolicy2B8075BA",
+    "AnimaticTaskRoleBF135BC3"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/AnimaticService/Service/SecurityGroup/from AnimaticStackAnimaticServiceLBSecurityGroup02A3EC0C:8000"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S0W7CMAz8Ft5DtsHEOzCGkNBWFcQrSoMpHiWpEgdUVf33pQ2ljE17yvl8qX2XDvhgNOLPPXGxfbk79jNMeLkiIY/MU9sSpOFlDLm2SNoUbLpXXVUxO+TlxMkjUN0JqGIgB7zc5LLmNtGURS7JUK5cooKuQ7F2BGuRZNDxHTe2VksUhFrdxDWYLaL6+BA0FwQXUbDI4NnD7sMLRWA8bgVhk2s1Jm/wcAJFbAXSGaRibrTLmx3+JWapAWt/0QvV8LVzy8tp5qyfXqta+C5MKmpX9vgGe1TYenpktCKBCswdd727AnNGGXIKsGIoTv51dEivOSPtk27sBtSstM0F1XFYPs5zzzaJLrXYTUQmlITdwwjIhCWUmVckjQJVevZP+vftxuiP+l6H3r+6alp811/7yf6V2rDvyoplOvVpLnV6a7e4qlgMVjsT8vh0lDv/30UFHbR6GvKXVz7sfVnEvnGK8AQ8Duc3wCgTB+8CAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "AnimaticStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "AnimaticServiceLoadBalancerDNSCC3D5233": {
+   "Value": {
+    "Fn::GetAtt": [
+     "AnimaticServiceLBE99C1AAF",
+     "DNSName"
+    ]
+   }
+  },
+  "AnimaticServiceServiceURLE94FF59A": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "AnimaticServiceLBE99C1AAF",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "AlbDnsName": {
+   "Description": "ALB DNS — use this as the hosted URL",
+   "Value": {
+    "Fn::GetAtt": [
+     "AnimaticServiceLBE99C1AAF",
+     "DNSName"
+    ]
+   }
+  },
+  "EcrRepositoryUri": {
+   "Description": "ECR repository URI for CI/CD",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Fn::Select": [
+        4,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "AnimaticEcr2BE83171",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".dkr.ecr.",
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "AnimaticEcr2BE83171",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "AnimaticEcr2BE83171"
+      }
+     ]
+    ]
+   }
+  },
+  "MediaBucketName": {
+   "Description": "S3 media bucket name",
+   "Value": {
+    "Ref": "AnimaticMedia1E5BC9B4"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

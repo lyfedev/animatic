@@ -1,0 +1,691 @@
+{
+  "/AnimaticStack": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AlbDnsName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlbDnsName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/EcrRepositoryUri": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "EcrRepositoryUri"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/MediaBucketName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "MediaBucketName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticEcr/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticEcr2BE83171"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticMedia/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticMedia1E5BC9B4"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcCDD192B6"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/IGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcIGW500F1A49"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/VPCGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcVPCGW3D2BAB64"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticCluster/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticClusterA023F421"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticTaskRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticTaskRoleBF135BC3"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LoadBalancerDNS": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLoadBalancerDNSCC3D5233"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/ServiceURL": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceServiceURLE94FF59A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/Service": [
+    {
+      "type": "aws:cdk:warning",
+      "data": "Enable the 'circuitBreaker' property to trigger a quicker deployment failure if tasks are failing to come start (without this setting deployments may take up to 3 hours to fail). [ack: @aws-cdk/aws-ecs:shouldUseCircuitBreaker]",
+      "trace": [
+        "Annotations.addMessage (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/annotations.js:1:3506)",
+        "Annotations.addWarningV2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2194)",
+        "new BaseService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:14671)",
+        "new BaseService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/no-box-stack-traces.js:1:345)",
+        "new FargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:7829)",
+        "new FargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:855)",
+        "new ApplicationLoadBalancedFargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs-patterns/lib/fargate/application-load-balanced-fargate-service.js:1:7416)",
+        "new ApplicationLoadBalancedFargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:855)",
+        "Kernel._Kernel_create (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:62551)",
+        "Kernel.create (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:53289)",
+        "KernelHost.processRequest (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:228006)",
+        "KernelHost.run (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:226990)",
+        "Immediate._onImmediate (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:227034)",
+        "process.processImmediate (node:internal/timers:505:21)"
+      ]
+    },
+    {
+      "type": "aws:cdk:warning",
+      "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+      "trace": [
+        "Annotations.addMessage (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/annotations.js:1:3506)",
+        "Annotations.addWarningV2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2194)",
+        "new BaseService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:16295)",
+        "new BaseService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/no-box-stack-traces.js:1:345)",
+        "new FargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:7829)",
+        "new FargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:855)",
+        "new ApplicationLoadBalancedFargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ecs-patterns/lib/fargate/application-load-balanced-fargate-service.js:1:7416)",
+        "new ApplicationLoadBalancedFargateService2 (/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:855)",
+        "Kernel._Kernel_create (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:62551)",
+        "Kernel.create (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:53289)",
+        "KernelHost.processRequest (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:228006)",
+        "KernelHost.run (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:226990)",
+        "Immediate._onImmediate (/private/var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/tmpfpjm_re1/lib/program.js:1:227034)",
+        "process.processImmediate (node:internal/timers:505:21)"
+      ]
+    }
+  ],
+  "/AnimaticStack/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1Subnet9ACFE677"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1RouteTable6283A2C3"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1RouteTableAssociation17D4B813"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1DefaultRouteDF71F503"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:208 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib, jsii runtime..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/EIP": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1EIP7195096A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet1/NATGateway": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet1NATGateway9E1EB88A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2Subnet0CBB7247"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2RouteTableA5C1B38F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2RouteTableAssociation16DE434C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2DefaultRoute04DA1B87"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:208 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib, jsii runtime..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/EIP": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2EIP24F1FA8A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PublicSubnet2/NATGateway": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPublicSubnet2NATGateway17BD1113"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet1Subnet030F89C8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet1RouteTableCF90AF1F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet1RouteTableAssociation09634EDB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet1/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet1DefaultRouteB4037B0E"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet2SubnetA903A008"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet2RouteTable4CBBA43A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet2RouteTableAssociation3B4169DE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../var/folders/b1/4p42d4bd4dx4qklhdmh907zc0000gn/T/jsii-kernel-QMVZCZ/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:270 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticVpc/PrivateSubnet2/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticVpcPrivateSubnet2DefaultRouteAF8BB018"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticTaskRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticTaskRoleDefaultPolicy2B8075BA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LB/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLBE99C1AAF"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/TaskDef/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceTaskDef0805EE53"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/Service/Service": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticService557662BB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LB/SecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLBSecurityGroupF364FF38"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LB/SecurityGroup/to AnimaticStackAnimaticServiceSecurityGroup7CFE435B:8000": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLBSecurityGrouptoAnimaticStackAnimaticServiceSecurityGroup7CFE435B80001048EACF"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LB/PublicListener/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLBPublicListener4ABB4D7A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/TaskDef/ExecutionRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceTaskDefExecutionRoleAE60503D"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/Service/SecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceSecurityGroup7CB8BD7D"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/Service/SecurityGroup/from AnimaticStackAnimaticServiceLBSecurityGroup02A3EC0C:8000": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceSecurityGroupfromAnimaticStackAnimaticServiceLBSecurityGroup02A3EC0C800093329CBC"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/LB/PublicListener/ECSGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceLBPublicListenerECSGroup976ECC4E"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/TaskDef/web/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceTaskDefwebLogGroupB9D1806F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/AnimaticStack/AnimaticService/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AnimaticServiceTaskDefExecutionRoleDefaultPolicy499825D8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ]
+}
