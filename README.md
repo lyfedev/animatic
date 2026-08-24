@@ -74,8 +74,15 @@ cdk deploy --profile newaccount
 |---|---|---|
 | `ENVIRONMENT` | No | `development` or `production` (default: `development`) |
 | `AWS_REGION` | No | AWS region (default: `us-east-1`) |
+| `GOOGLE_API_KEY` | **Yes** | Gemini API key — required for beat parsing |
+| `GEMINI_MODEL` | No | Gemini model id (default: `gemini-3.6-flash`) |
+| `MEDIA_BUCKET` | No | S3 bucket for generated media (default: `animatic-media-628818`) |
 | `GOOGLE_CLOUD_PROJECT` | Phase 3+ | Google Cloud project ID |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Phase 3+ | Path to service account JSON |
+
+> Keep credential files **outside** the repo — it is public. `.gitignore` covers
+> common key filenames, including the `<project>-<keyid>.json` shape that GCP
+> service-account keys download as, but an out-of-tree path is the safer default.
 
 In production, `GOOGLE_CLOUD_PROJECT` and credentials are read from AWS SSM Parameter Store at `/animatic/google-cloud-project` and `/animatic/google-application-credentials-json`.
 
