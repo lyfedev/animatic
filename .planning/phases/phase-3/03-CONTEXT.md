@@ -33,12 +33,25 @@ NOT this phase: generating the per-beat panels themselves (Phase 4), voice synth
   invented `INT. BOXING CLUB - NIGHT` for it while script scene 1 calls the same room
   `INT. BLUE DOOR FIGHT CLUB - NIGHT`. Same room, two names, two would-be slots.
   — **Reversibility:** reversible — a resolver rule, local to slot assignment.
-- **D-03:** Beyond the inheritance rule, resolve remaining headings by normalising the
-  slug (drop `INT.`/`EXT.`, time-of-day suffix, punctuation, possessives) and then
-  clustering what is left semantically. Every merge records both the source headings
-  and why they were judged the same place, so a wrong guess is visible in the manifest
-  rather than silent.
+- **D-03 (CORRECTED 2026-08-24):** Beyond the inheritance rule, resolve remaining
+  headings by normalising the time-of-day suffix and punctuation, then clustering what
+  is left semantically. Every merge records both source headings and why they were
+  judged the same place, so a wrong guess is visible in the manifest rather than silent.
+
+  **`INT.` and `EXT.` are NOT normalised away.** The original wording said to drop them;
+  that was wrong. Research caught it: dropping the prefix merges scene 6
+  `EXT. ROCKY'S APARTMENT - NIGHT` with scene 8 `INT. ROCKY'S APARTMENT - NIGHT`. Same
+  building, entirely different picture — a street-facing facade at night versus a
+  one-room interior. A location slot exists to hold *art*, so interior and exterior of
+  one address are two slots. Correct count is **7 locations**, not 6 (over-merged) and
+  not 8 (scene 2 unmerged).
   — **Reversibility:** reversible — merges are data in the manifest, re-runnable.
+- **D-03a:** Ground truth for "does this scene have a real slug" is the PDF, not
+  `beats.json`. Verified 2026-08-24: `scene_heading` in the beat list is model output,
+  and scene 2 is the *only* scene where it diverges from the script — every other scene
+  copied the slug verbatim. So D-02 must test the raw heading from
+  `pdf_extractor.extract_scenes()` against a slug regex. That is a local PDF re-read,
+  no LLM cost.
 
 ### Character Slots and Voices
 - **D-04:** **Art slots and voice identities are separate axes and do not collapse the
@@ -80,6 +93,17 @@ NOT this phase: generating the per-beat panels themselves (Phase 4), voice synth
   Each entry records the underlying numbers (beats, seconds, share) as its reason, so
   the ranking is checkable rather than asserted.
   — **Reversibility:** reversible — a derived field, recomputable from the beat list.
+
+### Known-Good Image Call (do not re-spike)
+- **D-12:** The smoke test that produced `output/smoke/panel_test_0.png` used
+  `client.models.generate_content(model="gemini-3.1-flash-image", contents=<prompt>,
+  config=types.GenerateContentConfig(response_modalities=["IMAGE"]))` with the
+  `GOOGLE_API_KEY` backend and **no** `system_instruction`. The image came back as
+  `inline_data` on a part of `candidates[0].content.parts`, mime `image/jpeg`, 697 KB.
+  Research flagged that `system_instruction` with an image-output model raises
+  `ClientError` on the API-key backend — consistent with the above, since the working
+  call did not use it. **Fold the D-08 shared style block into the prompt text.** No
+  spike task needed to rediscover this call shape.
 
 ### Claude's Discretion
 - Slot naming scheme and manifest file format and location.
