@@ -28,7 +28,8 @@
 
 ## Key Decisions
 - Language: Python
-- Cloud hosting: AWS
+- Cloud hosting: AWS account `339482628818` (profile: `newaccount`, user: `temp_lighthouse`)
+- All Animatic AWS resources prefixed `animatic-` to avoid collision with existing lighthouse project
 - AI services: Google Cloud only (google-adk, google-genai, google-generativeai, google-cloud-aiplatform)
 - Demo content: Rocky (1976), scenes 1–8, fixed
 - No user script upload on demo
