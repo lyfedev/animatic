@@ -39,9 +39,6 @@
 ## Open Questions
 - [ ] How is IBM Bob usage evidenced in the submission? (pass/fail eligibility — resolve with organisers before Phase 10)
 - [ ] CloudFront CDN + TLS: add to the CDK stack, or amend ROADMAP Phase 1 to drop the deliverable? (Phase 1 gap — demo URL is HTTP-only)
-- [ ] Shot rhythm vs runtime: runtime is now pinned to the page budget (4.26 min), so
-      the only remaining lever on average shot length is beat COUNT. 49 beats over
-      255.7s gives a 5.2s average; ~64 beats would give ~4s. Decide the target rhythm.
 - [ ] Panel style: smoke test returned greyscale shading with storyboard chrome (notebook binding, caption text, the words "NO FACIALS" drawn into the frame) instead of clean black line art on white. Phase 4 prompt work needed. Facial-feature rule was respected.
 - [ ] Live `POST /beats/parse` on the hosted URL has not been exercised (costs a Gemini call, overwrites `beats/latest.json`). The brief requires live beat parsing — prove before Phase 9.
 - [ ] Should `.bob/artifacts/` be committed? It is currently untracked, and may be the evidence trail for the IBM Bob question above.
@@ -64,7 +61,9 @@ line's duration.
 
 Current output: **47 beats**, scenes 1-8, 204.4s (3.4 min), **18/18 script dialogue
 lines captured and attributed 1:1 to beats**, 0 multi-turn beats, 0 beats shorter than
-their speech. Average shot 5.2s.
+their speech. Average shot 5.2s — **decided 2026-08-24: longer beats are accepted.** Runtime is
+governed by the page budget; beat count stays as extracted rather than being inflated
+to chase a faster cut. Revisit only if the assembled video actually reads as slow.
 
 **Scene runtime comes from script page geometry**, not from model guesses: one page is
 one minute, a scene claims every line from its own heading to the next (blanks
