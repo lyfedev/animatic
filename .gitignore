@@ -38,3 +38,10 @@ output/
 
 # Byte-compiled
 *.pyc
+
+# Test cache
+.pytest_cache/
+
+# CDK output (regenerated on synth)
+infra/cdk.out/
+assets/Rocky.mp4
