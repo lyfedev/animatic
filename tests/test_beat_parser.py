@@ -470,6 +470,100 @@ def test_split_beat_duration_derives_from_its_own_words():
 
 
 # ---------------------------------------------------------------------------
+# Scene timing from page geometry — one page is one minute
+# ---------------------------------------------------------------------------
+
+def test_scene_line_counts_include_blank_lines():
+    """Blank lines are the script's own pacing notation and must be counted.
+
+    extract_text() collapses them, so line counts come from character
+    positions on the page's 12pt grid instead. Scene 7 is 5 lines top to
+    bottom — 3 of text and 2 blank — which is 5/54 of a page.
+    """
+    from animatic.core.scene_timing import scene_line_counts
+
+    counts = scene_line_counts(PDF_PATH, first_n=8)
+    assert counts[7] == 5
+    assert set(counts) == {1, 2, 3, 4, 5, 6, 7, 8}
+
+
+def test_scene_durations_are_one_minute_per_page():
+    from animatic.core.scene_timing import scene_targets, secs_for_lines
+
+    assert secs_for_lines(54) == 60.0
+    assert secs_for_lines(27) == 30.0
+
+    targets = scene_targets(PDF_PATH, first_n=8)
+    assert targets[7] == pytest.approx(5.6, abs=0.1)
+    total = sum(targets.values())
+    # Scenes 1-8 occupy roughly four script pages.
+    assert 230 < total < 280, total
+
+
+def test_scenes_tile_the_page_without_gaps_or_overlap():
+    """Each scene runs heading-to-heading, so line counts are contiguous."""
+    from animatic.core.scene_timing import scene_line_counts
+
+    counts = scene_line_counts(PDF_PATH, first_n=8)
+    # Scenes 1-8 span pages 2-5 of the PDF; at 54 lines a page that is a
+    # little over 4 pages of grid. Every line is claimed exactly once, so the
+    # total is the distance from scene 1's heading to scene 9's.
+    assert sum(counts.values()) == pytest.approx(230, abs=25)
+    assert all(v >= 1 for v in counts.values())
+
+
+def test_budget_fit_hits_the_target():
+    from animatic.core.beat_extractor import Beat, Line, fit_scene_to_budget
+
+    beats = [
+        Beat("s4b1", 4, 1, "H", "establishing", "c", 4.0, False, "r"),
+        Beat("s4b2", 4, 2, "H", "dialogue", "c", 3.0, False, "r",
+             ["ROCKY"], [Line("ROCKY", "I'm a fighter.")]),
+        Beat("s4b3", 4, 3, "H", "dialogue", "c", 3.0, False, "r",
+             ["WOMAN"], [Line("WOMAN", "... Yo' iz an accident.")]),
+    ]
+    fit_scene_to_budget(beats, 22.2)
+
+    assert sum(b.duration_secs for b in beats) == pytest.approx(22.2, abs=0.3)
+    for b in beats:
+        assert b.duration_source == "page_budget"
+        assert "page geometry" in b.reason
+
+
+def test_budget_fit_never_pushes_speech_below_its_floor():
+    """Speech is incompressible — a tight budget must not clip a line."""
+    from animatic.core.beat_extractor import Beat, Line, fit_scene_to_budget
+
+    long_line = " ".join(["word"] * 40)
+    beats = [
+        Beat("s1b1", 1, 1, "H", "action", "c", 10.0, False, "r"),
+        Beat("s1b2", 1, 2, "H", "dialogue", "c", 5.0, False, "r",
+             ["A"], [Line("A", long_line)]),
+    ]
+    floor = beats[1].min_speakable_secs
+    fit_scene_to_budget(beats, 6.0)  # far less than the speech needs
+
+    assert beats[1].duration_secs >= floor
+    for b in beats:
+        assert b.duration_secs > 0
+
+
+def test_budget_fit_scales_a_scene_up_as_well_as_down():
+    from animatic.core.beat_extractor import Beat, fit_scene_to_budget
+
+    def scene():
+        return [Beat(f"s2b{i}", 2, i, "H", "action", "c", 4.0, False, "r")
+                for i in range(1, 4)]
+
+    up, down = scene(), scene()
+    fit_scene_to_budget(up, 36.0)
+    fit_scene_to_budget(down, 6.0)
+
+    assert sum(b.duration_secs for b in up) == pytest.approx(36.0, abs=0.3)
+    assert sum(b.duration_secs for b in down) == pytest.approx(6.0, abs=0.3)
+
+
+# ---------------------------------------------------------------------------
 # API endpoint test
 # ---------------------------------------------------------------------------
 

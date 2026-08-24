@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from animatic.core.beat_assembler import assemble_and_write
 from animatic.core.beat_extractor import extract_beats
 from animatic.core.pdf_extractor import extract_scenes
+from animatic.core.scene_timing import scene_targets
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -51,7 +52,11 @@ def main() -> None:
     # Step 1: Extract scenes from PDF
     print("Step 1/3  Extracting scenes from PDF...")
     scenes = extract_scenes(pdf_path, first_n=args.scenes)
-    print(f"          Found {len(scenes)} scenes: {sorted(scenes.keys())}\n")
+    targets = scene_targets(pdf_path, first_n=args.scenes)
+    budget = sum(targets.values())
+    print(f"          Found {len(scenes)} scenes: {sorted(scenes.keys())}")
+    print(f"          Page budget: {budget:.1f}s ({budget/60:.2f} min) "
+          f"at one page per minute\n")
 
     # Step 2: Extract beats per scene via Gemini
     print("Step 2/3  Extracting beats via Gemini (this may take a minute)...")
@@ -59,7 +64,9 @@ def main() -> None:
     total_beats = 0
     for scene_num, scene_text in sorted(scenes.items()):
         t0 = time.time()
-        beats = extract_beats(scene_num, scene_text)
+        beats = extract_beats(
+            scene_num, scene_text, target_secs=targets.get(scene_num)
+        )
         elapsed = time.time() - t0
         action = sum(1 for b in beats if b.type == "action")
         dialogue = sum(1 for b in beats if b.type == "dialogue")
@@ -68,7 +75,8 @@ def main() -> None:
         print(
             f"          Scene {scene_num:2d}: {len(beats):2d} beats  "
             f"[action={action} dialogue={dialogue} establishing={establishing} motion✦={motion}]"
-            f"  ({elapsed:.1f}s)"
+            f"  {sum(b.duration_secs for b in beats):5.1f}s"
+            f"/{targets.get(scene_num, 0):5.1f}s target  ({elapsed:.1f}s)"
         )
         scenes_beats[scene_num] = beats
         total_beats += len(beats)

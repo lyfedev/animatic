@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from animatic.core.beat_assembler import assemble_and_write
 from animatic.core.beat_extractor import extract_beats
 from animatic.core.pdf_extractor import extract_scenes
+from animatic.core.scene_timing import scene_targets
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,11 +49,14 @@ async def parse_beats() -> BeatsParseResponse:
     logger.info("Starting beat parsing pipeline")
 
     scenes = extract_scenes(_PDF_PATH, first_n=8)
+    targets = scene_targets(_PDF_PATH, first_n=8)
     scenes_beats: dict[int, list] = {}
     scene_summaries: list[SceneSummary] = []
 
     for scene_num, scene_text in sorted(scenes.items()):
-        beats = extract_beats(scene_num, scene_text)
+        beats = extract_beats(
+            scene_num, scene_text, target_secs=targets.get(scene_num)
+        )
         scenes_beats[scene_num] = beats
         scene_summaries.append(SceneSummary(
             scene=scene_num,

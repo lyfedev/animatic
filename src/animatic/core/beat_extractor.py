@@ -11,6 +11,7 @@ from google import genai
 from google.genai import types
 
 from animatic.config import settings
+from animatic.core.scene_timing import LINES_PER_PAGE, PAGE_SECS
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,8 @@ _BEAT_SCHEMA = {
 _WORDS_PER_SEC = 2.5
 # Extra seconds allowed per line for the pause between speakers.
 _PAUSE_PER_LINE = 0.5
+# No shot is shorter than this, however small its share of the page.
+_MIN_SHOT_SECS = 0.8
 
 
 @dataclass
@@ -161,12 +164,16 @@ class Beat:
         }
 
 
-def extract_beats(scene_num: int, scene_text: str) -> list[Beat]:
+def extract_beats(
+    scene_num: int, scene_text: str, target_secs: float | None = None
+) -> list[Beat]:
     """Extract beats from a single scene using Gemini.
 
     Args:
         scene_num: The screenplay scene number.
         scene_text: Raw scene text (heading + body).
+        target_secs: Screen time this scene should occupy, from its script
+            page geometry. When given, beat durations are scaled to sum to it.
 
     Returns:
         List of Beat objects with all required fields populated.
@@ -212,6 +219,9 @@ def extract_beats(scene_num: int, scene_text: str) -> list[Beat]:
         beat.beat_id = f"s{scene_num}b{i}"
         beat.beat = i
         _apply_duration_floor(beat)
+
+    if target_secs:
+        fit_scene_to_budget(beats, target_secs)
 
     logger.info("Scene %d: extracted %d beats", scene_num, len(beats))
     return beats
@@ -260,6 +270,58 @@ def _split_speaker_turns(beats: list[Beat]) -> list[Beat]:
                 )
             )
     return out
+
+
+def fit_scene_to_budget(beats: list[Beat], target_secs: float) -> None:
+    """Scale a scene's beats to the screen time its page geometry implies.
+
+    One script page is one minute, so a scene's line count sets its runtime.
+    The model's per-beat estimates are only a *shape* — this makes them sum
+    to a target measured from the script rather than guessed from a range.
+
+    Speech is the one incompressible part: a beat can never fall below the
+    time its lines take to say. Those beats are pinned at their floor and the
+    remaining budget is re-spread over the rest, repeatedly, until nothing
+    else would be pushed under its floor.
+    """
+    if not beats or target_secs <= 0:
+        return
+
+    floors = {id(b): b.min_speakable_secs for b in beats}
+    free = list(beats)
+    pinned_secs = 0.0
+
+    while free:
+        pool = target_secs - pinned_secs
+        free_total = sum(b.duration_secs for b in free)
+        if free_total <= 0:
+            break
+        scale = pool / free_total
+        under = [b for b in free if b.duration_secs * scale < floors[id(b)]]
+        if not under:
+            for b in free:
+                b.duration_secs = max(_MIN_SHOT_SECS, round(b.duration_secs * scale, 1))
+            break
+        for b in under:
+            b.duration_secs = max(_MIN_SHOT_SECS, floors[id(b)])
+            pinned_secs += b.duration_secs
+            free.remove(b)
+
+    for b in beats:
+        b.duration_source = "page_budget"
+        b.reason = (
+            f"{b.reason} [scene fitted to {target_secs}s from script page "
+            f"geometry at {LINES_PER_PAGE} lines/{PAGE_SECS:.0f}s]"
+        ).strip()
+
+    overrun = sum(b.duration_secs for b in beats) - target_secs
+    if overrun > 0.5:
+        logger.warning(
+            "Scene %d overruns its page budget by %.1fs — speech alone needs "
+            "more time than the script's line count allows",
+            beats[0].scene,
+            overrun,
+        )
 
 
 def _group_consecutive_turns(lines: list[Line]) -> list[list[Line]]:

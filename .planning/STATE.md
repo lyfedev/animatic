@@ -39,10 +39,9 @@
 ## Open Questions
 - [ ] How is IBM Bob usage evidenced in the submission? (pass/fail eligibility — resolve with organisers before Phase 10)
 - [ ] CloudFront CDN + TLS: add to the CDK stack, or amend ROADMAP Phase 1 to drop the deliverable? (Phase 1 gap — demo URL is HTTP-only)
-- [ ] Pacing: 3.4 min against ~4 min of screen time (scenes 1-8 span script pages 2-5).
-      Remaining gap is in action/establishing beats, whose durations the model still
-      picks from a range rather than deriving from content. `assets/Rocky.mp4` is the
-      full film — measure the real opening and calibrate against it.
+- [ ] Shot rhythm vs runtime: runtime is now pinned to the page budget (4.26 min), so
+      the only remaining lever on average shot length is beat COUNT. 49 beats over
+      255.7s gives a 5.2s average; ~64 beats would give ~4s. Decide the target rhythm.
 - [ ] Panel style: smoke test returned greyscale shading with storyboard chrome (notebook binding, caption text, the words "NO FACIALS" drawn into the frame) instead of clean black line art on white. Phase 4 prompt work needed. Facial-feature rule was respected.
 - [ ] Live `POST /beats/parse` on the hosted URL has not been exercised (costs a Gemini call, overwrites `beats/latest.json`). The brief requires live beat parsing — prove before Phase 9.
 - [ ] Should `.bob/artifacts/` be committed? It is currently untracked, and may be the evidence trail for the IBM Bob question above.
@@ -65,7 +64,17 @@ line's duration.
 
 Current output: **47 beats**, scenes 1-8, 204.4s (3.4 min), **18/18 script dialogue
 lines captured and attributed 1:1 to beats**, 0 multi-turn beats, 0 beats shorter than
-their speech. Average shot **4.3s** (was 5.5s).
+their speech. Average shot 5.2s.
+
+**Scene runtime comes from script page geometry**, not from model guesses: one page is
+one minute, a scene claims every line from its own heading to the next (blanks
+included), and `scene_timing.py` recovers those counts from character positions on the
+12pt grid because `extract_text()` collapses blank lines. Scene durations are then
+fitted to that budget, with speech time as an incompressible floor. Needs only the PDF
+— nothing is calibrated against the reference film, which the future flow will not
+have and whose final cut does not match the script anyway.
+
+Scenes 1-8 = 255.6s (4.26 min); the beat list matches it to 0.1s.
 
 ## Verification Debt (resolved 2026-08-24)
 `config.json` sets `verification: true`, but Phases 1 and 2 were marked complete
