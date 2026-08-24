@@ -2,16 +2,17 @@
 
 ## Current State
 - **Milestone:** 1 — Actor
-- **Phase:** 0 — Not started
+- **Phase:** 1 — Complete ✅
 - **Active work:** None
-- **Last updated:** 2026-07-27
+- **Last updated:** 2026-08-24
+- **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com
 
 ## Milestone Status
 
 ### Milestone 1 — Actor (minimum: generate first animatics)
 | Phase | Title | Status |
 |-------|-------|--------|
-| 1 | Project Scaffold & Infrastructure | ⬜ Not started |
+| 1 | Project Scaffold & Infrastructure | ✅ Complete |
 | 2 | Beat Parser | ⬜ Not started |
 | 3 | Asset Management & Manifest | ⬜ Not started |
 | 4 | Panel Generation | ⬜ Not started |
