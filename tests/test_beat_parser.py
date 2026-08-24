@@ -172,7 +172,8 @@ def test_extract_beats_returns_beats(mock_client_cls):
     from animatic.core.beat_extractor import extract_beats
     beats = extract_beats(1, "INT. TEST - NIGHT\nSome action.")
 
-    assert len(beats) == 3
+    # 3 raw beats in, 4 out: the ROCKY/ADRIAN exchange splits into two turns.
+    assert len(beats) == 4
     assert all(isinstance(b, Beat) for b in beats)
 
 
@@ -240,14 +241,15 @@ def test_dialogue_lines_keep_their_speaker(mock_client_cls):
     beats = extract_beats(1, "INT. TEST - NIGHT\nTalk.")
 
     spoken = [b for b in beats if b.dialogue]
-    assert len(spoken) == 1
-    lines = spoken[0].dialogue
-    assert [(x.character, x.line) for x in lines] == [
-        ("ROCKY", "Yo, Adrian."),
-        ("ADRIAN", "... I was worried."),
+    # One beat per speaker turn, each holding a single attributed line.
+    assert len(spoken) == 2
+    assert [(b.characters, b.dialogue[0].character, b.dialogue[0].line) for b in spoken] == [
+        (["ROCKY"], "ROCKY", "Yo, Adrian."),
+        (["ADRIAN"], "ADRIAN", "... I was worried."),
     ]
-    for x in lines:
-        assert x.character, "every line must name its speaker"
+    for b in spoken:
+        assert len(b.dialogue) == 1
+        assert b.dialogue[0].character, "every line must name its speaker"
 
 
 @patch("animatic.core.beat_extractor.genai.Client")
@@ -327,6 +329,144 @@ def test_every_dialogue_beat_can_speak_its_lines():
         )
         _apply_duration_floor(beat)
         assert beat.duration_secs >= beat.min_speakable_secs
+
+
+# ---------------------------------------------------------------------------
+# Speaker-turn splitting — film cuts on speaker turns
+# ---------------------------------------------------------------------------
+
+def _exchange_beat():
+    from animatic.core.beat_extractor import Beat, Line
+    return Beat(
+        beat_id="", scene=2, beat=0, scene_heading="INT. CLUB - NIGHT",
+        type="dialogue", content="The cornerman needles Rocky.", duration_secs=9.0,
+        motion_candidate=False, reason="Corner exchange.",
+        characters=["CORNERMAN", "ROCKY"],
+        dialogue=[
+            Line("CORNERMAN", "... Ya waltzin' -- Give the suckers some action."),
+            Line("ROCKY", "Hey --"),
+            Line("CORNERMAN", "Ya movin' like a bum -- Want some advice --"),
+            Line("ROCKY", "... Just gimme the water."),
+        ],
+    )
+
+
+def test_multi_turn_beat_is_split_one_beat_per_turn():
+    """A four-line exchange is four shots, not one 12s held frame."""
+    from animatic.core.beat_extractor import _split_speaker_turns
+
+    out = _split_speaker_turns([_exchange_beat()])
+
+    assert len(out) == 4
+    assert [b.characters for b in out] == [
+        ["CORNERMAN"], ["ROCKY"], ["CORNERMAN"], ["ROCKY"]
+    ]
+    for b in out:
+        assert len(b.dialogue) == 1, "each split beat holds exactly one turn"
+        assert b.type == "dialogue"
+        assert not b.motion_candidate, "a speaker turn is never a motion candidate"
+        assert "split" in b.reason, "the split must stay machine-readable"
+
+
+def test_split_preserves_every_line_in_order():
+    from animatic.core.beat_extractor import _split_speaker_turns
+
+    original = _exchange_beat()
+    out = _split_speaker_turns([original])
+
+    before = [(x.character, x.line) for x in original.dialogue]
+    after = [(x.character, x.line) for b in out for x in b.dialogue]
+    assert after == before, "splitting must not drop, reorder or reword a line"
+
+
+def test_consecutive_lines_by_one_speaker_stay_one_turn():
+    """Two lines in a row from the same character is one shot, not two."""
+    from animatic.core.beat_extractor import Beat, Line, _split_speaker_turns
+
+    beat = Beat(
+        beat_id="", scene=3, beat=0, scene_heading="INT. ROOM - DAY",
+        type="dialogue", content="c", duration_secs=5.0, motion_candidate=False,
+        reason="r", characters=["PROMOTER", "ROCKY"],
+        dialogue=[
+            Line("PROMOTER", "Twenty bucks for the locker."),
+            Line("PROMOTER", "Two bucks for the towel."),
+            Line("ROCKY", "Yeah."),
+        ],
+    )
+    out = _split_speaker_turns([beat])
+
+    assert len(out) == 2
+    assert len(out[0].dialogue) == 2 and out[0].characters == ["PROMOTER"]
+    assert len(out[1].dialogue) == 1 and out[1].characters == ["ROCKY"]
+
+
+def test_single_turn_and_silent_beats_pass_through_untouched():
+    from animatic.core.beat_extractor import Beat, Line, _split_speaker_turns
+
+    solo = Beat(
+        beat_id="s4b3", scene=4, beat=3, scene_heading="INT. TROLLEY - NIGHT",
+        type="dialogue", content="Rocky explains.", duration_secs=3.0,
+        motion_candidate=False, reason="Admission.", characters=["ROCKY"],
+        dialogue=[Line("ROCKY", "I'm a fighter.")],
+    )
+    silent = Beat(
+        beat_id="s5b1", scene=5, beat=1, scene_heading="EXT. STREET - NIGHT",
+        type="action", content="Rocky walks.", duration_secs=4.0,
+        motion_candidate=True, reason="Walk.", characters=["ROCKY"], dialogue=[],
+    )
+    out = _split_speaker_turns([solo, silent])
+
+    assert out == [solo, silent]
+    assert out[1].motion_candidate, "action beats keep their motion flag"
+
+
+@patch("animatic.core.beat_extractor.genai.Client")
+def test_split_beats_are_renumbered_contiguously(mock_client_cls):
+    """beat_id/beat must stay dense after a split — Phase 8 keys footage off them."""
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _make_mock_response(
+        json.dumps([
+            {
+                "beat": 1, "scene_heading": "INT. CLUB - NIGHT", "type": "action",
+                "content": "Rocky fights.", "duration_secs": 5.0,
+                "motion_candidate": True, "reason": "Fight.", "characters": ["ROCKY"],
+                "dialogue": [],
+            },
+            {
+                "beat": 2, "scene_heading": "INT. CLUB - NIGHT", "type": "dialogue",
+                "content": "They talk.", "duration_secs": 9.0,
+                "motion_candidate": False, "reason": "Corner.",
+                "characters": ["CORNERMAN", "ROCKY"],
+                "dialogue": [
+                    {"character": "CORNERMAN", "line": "Ya movin' like a bum --"},
+                    {"character": "ROCKY", "line": "... Just gimme the water."},
+                ],
+            },
+        ])
+    )
+
+    from animatic.core.beat_extractor import extract_beats
+    beats = extract_beats(2, "INT. CLUB - NIGHT\nStuff.")
+
+    assert [b.beat_id for b in beats] == ["s2b1", "s2b2", "s2b3"]
+    assert [b.beat for b in beats] == [1, 2, 3]
+
+
+def test_split_beat_duration_derives_from_its_own_words():
+    """Each turn is timed by what it says, not by a share of the parent."""
+    from animatic.core.beat_extractor import _apply_duration_floor, _split_speaker_turns
+
+    out = _split_speaker_turns([_exchange_beat()])
+    for b in out:
+        _apply_duration_floor(b)
+
+    for b in out:
+        assert b.duration_secs == b.min_speakable_secs
+        assert b.duration_source == "dialogue_floor"
+        assert "derived" in b.reason
+    # "Hey --" must not inherit the long line's duration.
+    assert out[1].duration_secs < out[0].duration_secs
 
 
 # ---------------------------------------------------------------------------

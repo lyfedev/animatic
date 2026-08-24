@@ -39,6 +39,10 @@
 ## Open Questions
 - [ ] How is IBM Bob usage evidenced in the submission? (pass/fail eligibility — resolve with organisers before Phase 10)
 - [ ] CloudFront CDN + TLS: add to the CDK stack, or amend ROADMAP Phase 1 to drop the deliverable? (Phase 1 gap — demo URL is HTTP-only)
+- [ ] Pacing: 3.4 min against ~4 min of screen time (scenes 1-8 span script pages 2-5).
+      Remaining gap is in action/establishing beats, whose durations the model still
+      picks from a range rather than deriving from content. `assets/Rocky.mp4` is the
+      full film — measure the real opening and calibrate against it.
 - [ ] Panel style: smoke test returned greyscale shading with storyboard chrome (notebook binding, caption text, the words "NO FACIALS" drawn into the frame) instead of clean black line art on white. Phase 4 prompt work needed. Facial-feature rule was respected.
 - [ ] Live `POST /beats/parse` on the hosted URL has not been exercised (costs a Gemini call, overwrites `beats/latest.json`). The brief requires live beat parsing — prove before Phase 9.
 - [ ] Should `.bob/artifacts/` be committed? It is currently untracked, and may be the evidence trail for the IBM Bob question above.
@@ -53,8 +57,15 @@ and `min_speakable_secs`. A dialogue beat is widened to `words/2.5 + 0.5/line` w
 model under-estimates, and the adjustment is written into `reason` so shot duration
 keeps a machine-readable justification.
 
-Current output: 36 beats, scenes 1-8, 196.4s (3.3 min), **18/18 script dialogue lines
-captured and attributed**, 0 beats shorter than their speech, 4 raised by the floor.
+**One beat per speaker turn.** Film cuts on speaker turns, so a four-line exchange is
+four shots, never one held frame. The prompt asks for this and `_split_speaker_turns`
+enforces it deterministically; consecutive lines by one character stay together as one
+turn. Each split beat is timed from its own words, so "Hey --" does not inherit a long
+line's duration.
+
+Current output: **47 beats**, scenes 1-8, 204.4s (3.4 min), **18/18 script dialogue
+lines captured and attributed 1:1 to beats**, 0 multi-turn beats, 0 beats shorter than
+their speech. Average shot **4.3s** (was 5.5s).
 
 ## Verification Debt (resolved 2026-08-24)
 `config.json` sets `verification: true`, but Phases 1 and 2 were marked complete

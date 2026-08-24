@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from google import genai
@@ -34,6 +34,13 @@ Rules:
 
 DIALOGUE — the most important rule:
 - `dialogue` is an ARRAY of {character, line} objects, one entry per spoken line.
+- ONE BEAT PER SPEAKER TURN. When a character starts speaking, that is a new beat.
+  Film cuts on speaker turns — a four-line back-and-forth is FOUR beats
+  (shot / reverse shot / shot / reverse shot), never one long held shot.
+  So `dialogue` normally holds exactly ONE entry. Use more than one only when
+  the same character speaks several lines without interruption.
+- Because each dialogue beat is one speaker, `content` should describe THAT
+  speaker's shot — who we are on and what they are doing as they say it.
 - Reproduce EVERY spoken line in the scene, verbatim, in script order.
 - NEVER merge two characters' lines into one entry. Each entry has exactly one speaker.
 - NEVER drop a line for being short. "Hey --" and "Absolutely." are lines.
@@ -182,25 +189,88 @@ def extract_beats(scene_num: int, scene_text: str) -> list[Beat]:
     raw_beats: list[dict] = json.loads(response.text)
     beats: list[Beat] = []
 
-    for i, raw in enumerate(raw_beats, start=1):
-        beat = Beat(
-            beat_id=f"s{scene_num}b{i}",
-            scene=scene_num,
-            beat=i,
-            scene_heading=raw.get("scene_heading", ""),
-            type=raw.get("type", "action"),
-            content=raw.get("content", ""),
-            duration_secs=float(raw.get("duration_secs", 3.0)),
-            motion_candidate=bool(raw.get("motion_candidate", False)),
-            reason=raw.get("reason", ""),
-            characters=raw.get("characters", []),
-            dialogue=_parse_lines(raw.get("dialogue")),
+    for raw in raw_beats:
+        beats.append(
+            Beat(
+                beat_id="",  # assigned after splitting, below
+                scene=scene_num,
+                beat=0,
+                scene_heading=raw.get("scene_heading", ""),
+                type=raw.get("type", "action"),
+                content=raw.get("content", ""),
+                duration_secs=float(raw.get("duration_secs", 3.0)),
+                motion_candidate=bool(raw.get("motion_candidate", False)),
+                reason=raw.get("reason", ""),
+                characters=raw.get("characters", []),
+                dialogue=_parse_lines(raw.get("dialogue")),
+            )
         )
+
+    beats = _split_speaker_turns(beats)
+
+    for i, beat in enumerate(beats, start=1):
+        beat.beat_id = f"s{scene_num}b{i}"
+        beat.beat = i
         _apply_duration_floor(beat)
-        beats.append(beat)
 
     logger.info("Scene %d: extracted %d beats", scene_num, len(beats))
     return beats
+
+
+def _split_speaker_turns(beats: list[Beat]) -> list[Beat]:
+    """Guarantee one speaker turn per beat.
+
+    Film cuts on speaker turns: a four-line exchange is four shots, not one
+    held frame. The prompt asks for this directly, so normally nothing here
+    fires — this is the deterministic backstop for when the model returns a
+    multi-turn beat anyway. Without it a beat can hold 4 lines, and the
+    duration floor then stretches it to ~12s of static panel, which is the
+    pacing bug this exists to prevent.
+
+    Consecutive lines by the same character stay together — that is one turn.
+    """
+    out: list[Beat] = []
+    for beat in beats:
+        turns = _group_consecutive_turns(beat.dialogue)
+        if len(turns) <= 1:
+            out.append(beat)
+            continue
+        for n, turn in enumerate(turns, start=1):
+            speaker = turn[0].character
+            spoken = " ".join(line.line for line in turn)
+            out.append(
+                replace(
+                    beat,
+                    beat_id="",
+                    beat=0,
+                    type="dialogue",
+                    content=f"{speaker}: {spoken}",
+                    # Recomputed from this turn's own words by the duration floor.
+                    duration_secs=0.0,
+                    # A single speaker turn is never worth animating.
+                    motion_candidate=False,
+                    reason=(
+                        f"{beat.reason} [split: turn {n} of {len(turns)} in this "
+                        f"exchange — film cuts on speaker turns, so each turn is "
+                        f"its own shot]"
+                    ).strip(),
+                    characters=[speaker],
+                    dialogue=list(turn),
+                    duration_source="model",
+                )
+            )
+    return out
+
+
+def _group_consecutive_turns(lines: list[Line]) -> list[list[Line]]:
+    """Group a beat's lines into speaker turns, preserving order."""
+    turns: list[list[Line]] = []
+    for line in lines:
+        if turns and turns[-1][0].character == line.character:
+            turns[-1].append(line)
+        else:
+            turns.append([line])
+    return turns
 
 
 def _parse_lines(raw: Any) -> list[Line]:
@@ -236,11 +306,23 @@ def _apply_duration_floor(beat: Beat) -> None:
     machine-readable reason, as PROJECT.md requires.
     """
     floor = beat.min_speakable_secs
-    if floor > beat.duration_secs:
-        beat.reason = (
-            f"{beat.reason} [duration raised {beat.duration_secs}s → {floor}s: "
+    if floor <= beat.duration_secs:
+        return
+
+    if beat.duration_secs <= 0.0:
+        # A beat produced by _split_speaker_turns carries no estimate of its
+        # own; its duration is derived from the words it actually holds.
+        note = (
+            f"[duration {floor}s derived from {beat.spoken_words} spoken words "
+            f"at {_WORDS_PER_SEC} words/sec plus {_PAUSE_PER_LINE}s per line]"
+        )
+    else:
+        note = (
+            f"[duration raised {beat.duration_secs}s → {floor}s: "
             f"{beat.spoken_words} spoken words across {len(beat.dialogue)} line(s) "
             f"cannot be delivered in less at {_WORDS_PER_SEC} words/sec]"
-        ).strip()
-        beat.duration_secs = floor
-        beat.duration_source = "dialogue_floor"
+        )
+
+    beat.reason = f"{beat.reason} {note}".strip()
+    beat.duration_secs = floor
+    beat.duration_source = "dialogue_floor"
