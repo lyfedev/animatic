@@ -76,12 +76,12 @@ Plans:
   4. Replacing a slot file and re-running regenerates the panels that use it
   5. Each manifest entry records slot name, priority, source and reason
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 
 - [x] 03-01-PLAN.md — Tracer: one slot end to end, then the full 16-slot registry (7 locations, 9 characters), priority ranking and the voice key
-- [ ] 03-02-PLAN.md — Reference-art ingestion, temp-art generation for every empty slot, manifest assembly with change detection and an honest S3 write
+- [x] 03-02-PLAN.md — Reference-art ingestion, temp-art generation for every empty slot, manifest assembly with change detection and an honest S3 write
 - [ ] 03-03-PLAN.md — Real end-to-end run, art review against the D-09 failure modes, and the Asset Slot Contract for Phases 4 and 5
 
 ### Phase 4: Panel Generation
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Infrastructure | 1/1 | Complete (1 gap: no CDN) | 2026-08-23 |
 | 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
-| 3. Asset Management & Manifest | 1/3 | In Progress|  |
+| 3. Asset Management & Manifest | 2/3 | In Progress|  |
 | 4. Panel Generation | 0/TBD | Not started | - |
 | 5. Audio Synthesis | 0/TBD | Not started | - |
 | 6. Motion Generation | 0/TBD | Not started | - |
