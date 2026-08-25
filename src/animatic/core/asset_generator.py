@@ -195,6 +195,12 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
     frame" and detailed-face failure modes D-09 and PROJECT.md's
     visual-style rule both rule out.
 
+    The blank-face wording names no headwear. It used to bound the face
+    plane by "the hairline, hat brim and jaw contour" — naming a hat twice
+    while describing the head, which put a hat on every character including
+    a boxer in trunks and the man reaching into his locker *for* his hat.
+    A prompt that mentions an object is a prompt that draws it.
+
     Characters are deliberately NOT described from their beats — a beat's
     content describes the action, not the person, so every character
     sharing a scene would inherit the same sentence and be drawn the same
@@ -221,10 +227,10 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
             "as the story, a single full-length figure in a neutral "
             "three-quarter standing pose, alone against an open white "
             "background. Where the face sits, the outline traces one "
-            "continuous blank plane bounded only by the hairline, hat "
-            "brim and jaw contour — as bare and unmarked as the open "
+            "continuous blank plane bounded only by the hairline and jaw "
+            "contour — as bare and unmarked as the open "
             "background itself, with no eyebrow, eye, nose or mouth line "
-            "interrupting that plane anywhere. Hair, hat and jaw are "
+            "interrupting that plane anywhere. Hair and jaw are "
             "described by the same outline work as the rest of the "
             "figure, carrying no lettering anywhere in the picture."
         )
@@ -232,10 +238,10 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
         f"{slot.display_name.title()}, a single full-length figure in a "
         f"neutral three-quarter standing pose, alone against an open "
         f"white background. Where the face sits, the outline traces one "
-        f"continuous blank plane bounded only by the hairline, hat brim "
-        f"and jaw contour — as bare and unmarked as the open background "
+        f"continuous blank plane bounded only by the hairline and jaw "
+        f"contour — as bare and unmarked as the open background "
         f"itself, with no eyebrow, eye, nose or mouth line interrupting "
-        f"that plane anywhere. Hair, hat and jaw are described by the "
+        f"that plane anywhere. Hair and jaw are described by the "
         f"same outline work as the rest of the figure, carrying no "
         f"lettering anywhere in the picture."
     )

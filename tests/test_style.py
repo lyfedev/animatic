@@ -7,6 +7,10 @@ word must not fail its own test.
 
 from __future__ import annotations
 
+import re
+
+import pytest
+
 from unittest.mock import MagicMock, patch
 
 from animatic.core.style import STYLE_BLOCK, build_slot_prompt
@@ -204,3 +208,63 @@ def test_character_context_is_empty_when_no_location_matches():
     char = Slot(slot_id="ghost", slot_type="character", display_name="GHOST")
     char.beat_ids = ["nope"]
     assert character_context(char, [char], {"beats": []}) == ""
+
+
+# ---------------------------------------------------------------------------
+# Face suppression must describe anatomy only — naming an object draws it
+# ---------------------------------------------------------------------------
+
+# Any of these in the blank-face wording puts that object on every character
+# in every script. The bug that produced this list: the face plane was bounded
+# by "the hairline, hat brim and jaw contour", which named a hat twice and so
+# drew one on a boxer in trunks and on the man reaching into his locker *for*
+# his hat.
+_HEADWEAR_AND_GARMENT_NOUNS = (
+    "hat", "cap", "helmet", "hood", "brim", "beret", "visor", "turban",
+    "scarf", "mask", "goggles", "glasses", "crown", "headband", "bandana",
+    "collar", "coat", "jacket", "uniform",
+)
+
+
+def _character_slot(minor: bool):
+    from animatic.core.slot_resolver import Slot
+    s = Slot(slot_id="someone", slot_type="character", display_name="SOMEONE")
+    s.is_minor = minor
+    s.beat_ids = []
+    return s
+
+
+@pytest.mark.parametrize("minor", [False, True])
+def test_character_prompt_names_no_headwear_or_garment(minor):
+    """The face-suppression clause must describe anatomy, never an object.
+
+    Asserts on the BUILT SUBJECT STRING, not the source file, so an
+    explanatory comment naming the old wording cannot fail its own test.
+    """
+    from animatic.core.asset_generator import _subject_note
+
+    note = _subject_note(_character_slot(minor), {"beats": []}).lower()
+    # Word boundaries, not substrings — "hat" is inside "that".
+    named = [
+        w for w in _HEADWEAR_AND_GARMENT_NOUNS
+        if re.search(rf"\b{w}s?\b", note)
+    ]
+    assert not named, (
+        f"character prompt names {named} — a prompt that names an object "
+        f"draws it on every character in every script"
+    )
+
+
+@pytest.mark.parametrize("minor", [False, True])
+def test_character_prompt_still_suppresses_facial_features(minor):
+    """Removing the object nouns must not lose the rule they were part of.
+
+    PROJECT.md: no facial features in wide/medium shots.
+    """
+    from animatic.core.asset_generator import _subject_note
+
+    note = _subject_note(_character_slot(minor), {"beats": []}).lower()
+    assert "blank" in note
+    assert "hairline" in note and "jaw" in note
+    for feature in ("eyebrow", "eye", "nose", "mouth"):
+        assert feature in note, f"{feature} must still be named as absent"
