@@ -19,7 +19,7 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 4 — 1/3 plans executed (04-01: panel pipeline tracer, cache/retry — see 04-01-SUMMARY.md); 04-02 (scene-2 batch) next
+- **Phase:** 4 — Complete, 3/3 plans executed. All 49 panels generated (04-01: tracer/pipeline; 04-02: scene-2 review, PROMPT_TEMPLATE_VERSION v3; 04-03: remaining 30 beats, live cache proof, Panel Contract). Developer's D-09 gate: accept-with-note — 5 open WINDOWS.md items carried into Phase 5+
 - **Active work:** None
 - **Last updated:** 2026-08-25
 - **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com (HTTP only — no TLS, see Phase 1 gap)
@@ -33,7 +33,7 @@ progress:
 | 1 | Project Scaffold & Infrastructure | ⚠️ Complete, 1 gap | [1-VERIFICATION.md](phases/phase-1/1-VERIFICATION.md) — 5/6, no CloudFront CDN |
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
 | 3 | Asset Management & Manifest | 🔄 3/3 plans executed, verification pending | [03-03-SUMMARY.md](phases/phase-3/03-03-SUMMARY.md) |
-| 4 | Panel Generation | 🔄 1/3 plans executed | [04-01-SUMMARY.md](phases/phase-4/04-01-SUMMARY.md) |
+| 4 | Panel Generation | ✅ Complete, 5 open windows | [04-01-SUMMARY.md](phases/phase-4/04-01-SUMMARY.md), [04-ART-REVIEW.md](phases/phase-4/04-ART-REVIEW.md) |
 | 5 | Audio Synthesis | ⬜ Not started | — |
 | 6 | Motion Generation | ⬜ Not started | — |
 | 7 | Video Assembly | ⬜ Not started | — |
@@ -340,6 +340,151 @@ this before it ships across all 49 panels (D-09).
 `output/panels/index.json` currently holds exactly 1 entry (`s2b7`) — expected for this plan's
 scope. 04-02 owns generating the rest of scene 2.
 
+## Phase 4 Plan 02 — Scene 2 Art Review, Two Revision Passes (complete 2026-08-25)
+
+Ran `scripts/build_panels.py --scene 2` three times against the live API — a v1 baseline,
+then the plan's full two-pass revision budget (D-09's hard ceiling). `PROMPT_TEMPLATE_VERSION`
+moved v1 → v2 → v3 (`panel_prompt.py`, commits `2a272a5`, `70831e6`). v2 bound the blank-face
+clause to every figure in frame instead of an implicit singular one, and added "garment" to
+the room rule's noun list. v3 named the two contexts that survived v2 directly — a packed
+crowd and the moment of impact for the blank-face rule, a familiar/iconic garment for the room
+rule — after v2 showed the broader wording only partially closed both gaps.
+
+Required samples (`s2b1`, `s2b2`, `s2b7`, `s2b16`, `s2b18`) all read clean by v3. Two further
+defects found while reviewing all 19 panels at each pass were fixed within budget: a ~15-figure
+crowd carrying full faces (`s2b3`) and "ROCKY" lettered onto a robe via the model's own
+knowledge of the source film rather than the prompt text (`s2b17`, resolved — the robe reads
+fully blank in v3).
+
+**Developer's D-09 gate — accept-with-note (2026-08-25).** Four defects survived both revision
+passes and were reviewed live: `s2b3`'s crowd still carries full faces; `s2b9`/`s2b5`'s
+two-figure close-ups are less reliable than single-character close-ups; `s2b12` renders as a
+solid black fill; `s2b16`'s knockout carries cartoon impact stars. The developer chose to
+generate the remaining 30 beats and carry all four forward rather than extend the two-pass
+ceiling — the scene reads as an editable fight with real coverage, and Phase 7 (the first
+watchable animatic) is the milestone to protect. **Re-evaluate in the assembled cut, not as
+stills** — `scripts/build_panels.py --force --only <beat_id>` regenerates one panel without
+disturbing any other, if any of the four read badly in motion. Full rationale and the defect
+table: `.planning/WINDOWS.md` §"Phase 4 D-09 gate". `PROMPT_TEMPLATE_VERSION` stays at `v3` for
+the rest of the phase — the ceiling is spent, not reopened.
+
+`.planning/WINDOWS.md` entry 5 (04-01's eye-rendering defect) closed. Four new entries opened
+(#6-#9), matching the gate table above.
+
+## Phase 4 Plan 03 — Full Run, Cache Proof, Panel Contract (complete 2026-08-25)
+
+`scripts/build_panels.py` run with no scene filter: scene 2's 19 panels reused from cache at
+zero API cost, the other 30 generated live (0 `generation_failed`), 49 total in 344.2s. Shot
+sizes split 8 wide / 23 medium / 18 close-up, matching D-01 over the corpus's 8
+establishing/23 action/18 dialogue beats. `output/beats.json` verified byte-identical
+(MD5 unchanged) before and after. `PROMPT_TEMPLATE_VERSION` stayed at `v3` — no clause wording
+touched, per the developer's gate decision not to reopen the two-pass ceiling.
+
+Sampled `s3b7`, `s5b4`, `s8b1`, `s4b4` against 04-02's six review points. Three read clean.
+`s5b4` (Rocky at the Animal Town Pet Shop) confirmed 04-CONTEXT.md's D-12 prediction live,
+outside scene 2: the shop's sign, an "OPEN" placard and a "PET SUPPLIES" placard all render as
+legible drawn-in text despite the room rule. Survived one `--force` retry (garbled to "ANIMAL
+TOWN PET SIOP", still lettered) — logged as `.planning/WINDOWS.md` entry 10, not chased with a
+clause revision. Full verdicts: `04-ART-REVIEW.md`'s second-pass section.
+
+**The cache proof — the real-file replace-and-restore, closing Phase 3's own deferred
+criterion 4.** State one (nothing changed): 49/49 reused, 0 calls. State two: swapped
+`ext_street.jpg`'s bytes onto `int_rockys_hallway.jpg` (the slot with exactly one dependent
+beat, `s7b1`); `build_assets.py` re-read all 16 slots with zero calls and recomputed the
+swapped slot's `content_hash`; `build_panels.py` invalidated exactly `s7b1` and left the other
+48 reused — the blast-radius proof. The live regeneration call itself hit a Gemini billing wall
+(429 RESOURCE_EXHAUSTED, prepayment credits exhausted by this plan's ~31 live calls) — an
+account/billing constraint, not a cache-key defect; the invalidation logic did exactly what it
+should. State three: restored the original bytes, confirmed the manifest's `content_hash`
+reverted exactly, and (with the API unable to fulfil a live call) repaired `s7b1`'s index entry
+back to `reused` through the project's own `panel_cache_key`/`build_index`/`write_index`
+functions against the untouched, still-correct `s7b1.jpg` (verified present locally and in S3,
+byte-identical to the pre-experiment artifact, before use — no call made or claimed). Two
+further unmodified runs held at 49 reused / 0 generated / 0 failed. Full evidence, console
+counts and the repair rationale: `04-ART-REVIEW.md`'s caching section.
+
+Also found and documented (not fixed, out of this plan's `files_modified`): `04-03-PLAN.md`'s
+own Task 2 automated `<verify>` block unpacks `slot_hashes` (a list of `{"slot_id",
+"content_hash"}` dicts) as if it were a list of 2-tuples, binding to the dicts' own keys
+instead of their values — it flags false "drift" on every panel with a dependent slot
+regardless of correctness. The corrected check (iterate dict values) confirms zero real drift.
+
+## Phase 4 — Panel Contract
+
+The panel index Phases 5, 6 and 7 read without re-deriving it — same register as the Phase 2
+Beat Contract and the Phase 3 Asset Slot Contract above.
+
+**Where it lives.** `output/panels/index.json` locally, `panels/index.json` in the media
+bucket (`s3://animatic-media-628818/`). Panels themselves: `output/panels/<beat_id>.<ext>`
+locally, `panels/<beat_id>.<ext>` in S3. The index names `beats_source` and `beats_generated_at`
+(the exact beat list it was built from) and `assets_manifest_source` /
+`assets_manifest_generated_at` (the exact asset manifest it was built against), so any index
+can always be tied to its inputs. Top-level counts: `total_panels`, `generated_count`,
+`reused_count`, `failed_count`, plus the index's own `s3_ok`/`s3_reason` (honest, never
+assumed — T-04-03).
+
+**Per-entry fields, in beat order.** `build_index` sorts every entry by `(scene, beat)` before
+writing, so `output/panels/index.json`'s `panels` array is always the order Phase 7 assembles
+from — it never needs to join back to `output/beats.json` to sequence the cut. Each entry
+carries `beat_id`, `scene`, `beat`, `type`, and **`duration_secs` copied straight from the
+beat** — the field Phase 7 cuts on. Also: `shot_size`, `shot_size_reason`, `facial_features`,
+`facial_features_reason`, `asset_slots_used`, `slot_hashes` (`[{slot_id, content_hash}, ...]`
+for every dependent slot), `prompt`, `prompt_template_version`, `cache_key`, `panel_uri`,
+`panel_s3_uri`, `content_hash`, `source` (`generated`/`reused`/`generation_failed`), and
+`source_reason`.
+
+**Shot size is derived, never stored back.** `establishing` → wide, `action` → medium,
+`dialogue` → close-up (D-01), computed at panel-build time by `panel_prompt.shot_size_for` and
+never written into `output/beats.json` (D-02) — the beats stand as initially rendered, and
+adding a field to them would invalidate the Phase 3 asset manifest's own content hashes. Every
+panel records both the derived value and the rule that assigned it in `shot_size_reason`, the
+same way a beat records `duration_source` — except `duration_source` carries three live values
+in this corpus (`model`, `page_budget`, `dialogue_floor`), where shot size only ever carries
+one rule (D-01's lookup) plus a documented medium fallback for an unrecognised beat type.
+
+**The facial rule is keyed off shot size (D-05).** Wide and medium carry no facial features at
+all; close-ups carry a brow line, a mouth line and a nose line — never eyes, never full
+rendering. Three prompt rules produce it, paid for twice across 04-01 and 04-02's two revision
+passes: state the rule as positive prose, never a negation (a negation gets rendered as literal
+text — "NO FACIALS" was once painted into a frame); place the rule that matters LAST in the
+prompt (a rule stated mid-prompt loses to whatever follows it); and name no object that is not
+wanted in the picture, including as an absence (naming "hat brim" as a face boundary put a hat
+on every character; naming "iris"/"pupil" as absent drew a fully rendered eye anyway — the
+close-up clause names only the three lines that ARE drawn). Guards assert on the built prompt
+string (`tests/test_panel_prompt.py`), never on the source file.
+
+**What the cache key covers.** `panel_generator.panel_cache_key` hashes the beat's own content
+fields (`beat_id`, `type`, `content`, `characters`, `scene`), the derived `shot_size`, every
+dependent slot's **current** `content_hash` read fresh from the live asset manifest at build
+time (`_dependent_slot_records`), and `PROMPT_TEMPLATE_VERSION`. It deliberately does **not**
+read the asset manifest's own `stale_beat_ids` — that field is a point-in-time diff the asset
+pipeline computes against *its own* previous manifest snapshot on each `build_assets.py` run
+(it clears to `[]` only once a subsequent no-op run confirms nothing changed further), not a
+live comparison Phase 4 can trust between independent runs of the two pipelines. Bumping
+`PROMPT_TEMPLATE_VERSION` by hand after any clause wording change is the lever that forces
+every panel to redraw on the next ordinary run, without a manual `--force`.
+
+**`--scene`/`--only` narrow generation, never the index.** A beat outside the current
+selection is carried forward from the previous index unchanged (the whole-index rule) — all 49
+beats stay in `output/panels/index.json` on every run, matching Phase 3's own `--only`
+regression class.
+
+**Panels generate from text only, this phase (D-08).** Reference-image conditioning was
+spiked and proven working in 04-CONTEXT.md but held out deliberately; a later phase that
+revisits it adds a second `contents` part to the `generate_content` call and nothing else in
+this contract changes.
+
+**The style constant is shared.** Panels import `STYLE_BLOCK` from `src/animatic/core/style.py`
+— the same constant slot art uses (Phase 3 D-08) — never a second, per-phase style block.
+
+**Scene-2 gate outcome, for Phase 7.** The developer's D-09 gate (2026-08-25) was
+accept-with-note: all 49 beats have panels, and five defects are carried in
+`.planning/WINDOWS.md` as open (`#6` crowd faces `s2b3`, `#7` two-figure close-up eyes
+`s2b9`/`s2b5`, `#8` impact-reaction trace `s2b15`, `#9` possible partial signage `s2b19`, `#10`
+confirmed signage lettering `s5b4`), plus one already-carried Phase 3 item (`#4`, a filled-black
+garment shape). None block Phase 7 — re-evaluate in the assembled cut; `--force --only
+<beat_id>` regenerates one panel in isolation if any read badly in motion.
+
 ## Deadline
 
 2026-09-09 14:00 PDT
@@ -350,6 +495,8 @@ scope. 04-02 owns generating the rest of scene 2.
 - [Phase 3]: Plan 02: reference art matched by slot_directory (wins outright) then filename_token (token-subset, not substring); generate_missing_art groups by art_slot_id and orders by min priority_rank so shared slots generate at their highest-priority member's rank; s3_writer.put_bytes centralizes all S3 writes in the codebase behind one honest S3Result
 - [Phase 3]: Phase 3 Plan 03: real 16-slot manifest + 13 art files shipped; rocky is now generated (not reference-backed) per 5f581e0's slot-directory-only rule; strengthened no-facial-features subject clause fixed a repeat regression; Asset Slot Contract settled in STATE.md for Phase 4/5
 - [Phase 4]: Phase 4 Plan 01: panel pipeline (panel_prompt/panel_generator/panel_manifest/build_panels.py) proven end-to-end on tracer beat s2b7; cache-hit reuse, retry, and whole-index carry-forward implemented under TDD; close-up facial clause (D-05, [ASSUMED]) visually failed on first live generation (eyes fully rendered) — flagged in WINDOWS.md entry 5 for 04-02 to revise
+- [Phase 4]: Phase 4 Plan 02: scene 2's 19 panels reviewed against six points across two revision passes (PROMPT_TEMPLATE_VERSION v1→v2→v3); WINDOWS.md entry 5 fixed; four new open entries (#6-#9 — crowd faces, two-figure close-up eyes, impact-reaction trace, possible signage). Developer's D-09 gate: accept-with-note — generate the remaining 30 beats, carry all four (plus a solid-black-fill and cartoon-impact-stars finding) forward, revisit only if they hurt the assembled cut in Phase 7; two-pass ceiling spent, not extended
+- [Phase 4]: Phase 4 Plan 03: remaining 30 beats generated (49/49 panels, 8 wide/23 medium/18 close-up); s5b4 confirmed D-12's predicted lettering-leak risk live outside scene 2 (WINDOWS.md #10); the panel cache proven on real files — an unchanged re-run reused all 49, and swapping a slot's art bytes invalidated exactly its one dependent beat (s7b1), closing Phase 3's own deferred criterion 4 — though the live regeneration call itself hit a Gemini billing wall (429, prepayment credits exhausted) and the settled state was reached by repairing the index entry through the project's own cache-key/index-write functions against the untouched, verified-identical prior panel rather than a fresh live call; Panel Contract settled in STATE.md for Phase 5/6/7; a bug found in 04-03-PLAN.md's own Task 2 verify script (dict-unpacking `slot_hashes` by key instead of value) documented, not fixed (out of files_modified)
 
 ## Session
 
