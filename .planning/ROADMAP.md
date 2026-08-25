@@ -261,13 +261,13 @@ change a character or a room, there is no reason to build an interface for it.
     slot that generated a soldier in a beret and tactical vest generated a boxer in a
     hoodie with hand wraps, and WOMAN became an older trolley rider in a headscarf with a
     shopping bag rather than a generic woman.
-    **Deliberately left unwired.** The location description is a *scene*, so feeding it in
-    stages the figure inside the room — `rocky` came back as a ringside crowd instead of a
-    compositable asset — and rewording it toward wardrobe-only broke identity again (a
-    figure in a wide-brimmed hat holding a stick). Getting identity and isolation at once
-    needs a real iteration loop with a scoring harness, not one-shot prompt guesses inside
-    an unrelated phase. Wire it when S-01 is built, or earlier in Phase 4 if character
-    sameness blocks panels.
+    **Now wired (2026-08-24).** The earlier attempts failed because the location
+    description is a *scene*: left open-ended it staged the figure inside the room, and
+    rewording toward wardrobe-only broke identity instead. What fixed it was ORDER — the
+    context clause now closes with a restatement of the isolation rule, so the last thing
+    the model reads is "one lone figure on a blank page", not a room. Those attempts were
+    also polluted by the hat defect below, which was perturbing every generation while the
+    context wording was being judged.
   - **Feeds from reference-art candidates:** loose files are now offered rather than
     adopted (see below), and this inspector is where a human designates them. Half-built already: slot
   replacement, `content_hash` and `stale_beat_ids` exist (FR-02). Missing is the UI and a

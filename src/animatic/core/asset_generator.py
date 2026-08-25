@@ -21,7 +21,7 @@ from google.genai import types
 
 from animatic.config import settings
 from animatic.core.slot_resolver import Slot
-from animatic.core.style import build_slot_prompt, describe_slot
+from animatic.core.style import build_slot_prompt, character_context, describe_slot
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ def generate_missing_art(
     for art_id in ordered_art_ids:
         members = groups[art_id]
         primary = min(members, key=lambda s: s.priority_rank)
-        prompt = build_slot_prompt(primary, _subject_note(primary, beats))
+        prompt = build_slot_prompt(primary, _subject_note(primary, beats, slots))
 
         prev = previous_by_id.get(primary.slot_id)
         reuse_path: Path | None = None
@@ -185,7 +185,9 @@ def _reuse_art(
         )
 
 
-def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
+def _subject_note(
+    slot: Slot, beats: dict[str, Any], slots: list[Slot] | None = None
+) -> str:
     """Build the subject clause for one slot's generation prompt.
 
     Locations ask for an empty establishing view grounded in the beats that
@@ -221,6 +223,20 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
             f"hand-painted with this location's own name or any other "
             f"word."
         )
+    # A bare name is ambiguous about the film rather than the word: "BLACK
+    # FIGHTER" drew a soldier in a beret and tactical vest. character_context
+    # supplies the world from the locations of the character's own scenes.
+    # It goes AFTER the figure description and is closed by a restatement of
+    # the isolation rule, because the location description is a scene — left
+    # open-ended the model stages the figure inside the room.
+    context = character_context(slot, list(slots or []), beats)
+    belongs = (
+        f" This person spends their time somewhere like this: {context}. "
+        f"Read that only to decide what they wear and carry. The drawing "
+        f"itself remains one lone figure on a blank white page, the "
+        f"surroundings left out of the frame entirely."
+        if context else ""
+    )
     if slot.is_minor:
         return (
             "One unnamed background figure of the same period and world "
@@ -233,6 +249,7 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
             "interrupting that plane anywhere. Hair and jaw are "
             "described by the same outline work as the rest of the "
             "figure, carrying no lettering anywhere in the picture."
+            + belongs
         )
     return (
         f"{slot.display_name.title()}, a single full-length figure in a "
@@ -243,5 +260,5 @@ def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
         f"itself, with no eyebrow, eye, nose or mouth line interrupting "
         f"that plane anywhere. Hair and jaw are described by the "
         f"same outline work as the rest of the figure, carrying no "
-        f"lettering anywhere in the picture."
+        f"lettering anywhere in the picture.{belongs}"
     )
