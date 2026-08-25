@@ -22,11 +22,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from animatic.core.asset_generator import generate_missing_art
-from animatic.core.asset_manifest import build_manifest, write_manifest
+from animatic.core.asset_manifest import build_manifest, write_manifest, write_reference_art
 from animatic.core.reference_art import resolve_reference_art
 from animatic.core.slot_resolver import resolve_slots
 
 _DEFAULT_REFERENCE_DIR = Path("assets/reference-art")
+_MANIFEST_PATH = Path("output/assets/manifest.json")
 
 
 def main() -> None:
@@ -78,6 +79,13 @@ def main() -> None:
     start = time.time()
     beats = json.loads(beats_path.read_text())
 
+    previous_manifest = None
+    if _MANIFEST_PATH.exists():
+        try:
+            previous_manifest = json.loads(_MANIFEST_PATH.read_text())
+        except json.JSONDecodeError:
+            previous_manifest = None
+
     print(f"\nBuilding asset manifest from {beats_path} + {pdf_path}\n")
 
     print("Step 1/4  Resolving slots...")
@@ -106,7 +114,13 @@ def main() -> None:
     if scan.matched_slot_ids:
         for slot_id in scan.matched_slot_ids:
             slot = next(s for s in slots if s.slot_id == slot_id)
-            print(f"          {slot_id:32s} <- reference ({slot.match_rule}, {len(slot.source_files)} file(s))")
+            # resolve_reference_art already set slot.art_uri to the active
+            # source file's own path; write_reference_art copies those bytes
+            # into the shared output tree + S3 and overwrites art_uri/
+            # art_s3_uri/content_hash to point at the copy, so Phase 4 gets
+            # one consistent location regardless of source.
+            write_reference_art(slot, Path(slot.art_uri))
+            print(f"          {slot_id:32s} <- reference ({slot.match_rule}, {len(slot.source_files)} file(s)) -> {slot.art_uri}")
     else:
         print(f"          No files in {reference_dir} matched a slot")
     if scan.unmatched:
@@ -123,10 +137,17 @@ def main() -> None:
                 f"({slot.share_pct}% share) -> {outcome} {slot.art_uri}  ({elapsed:.1f}s)"
             )
 
-        generate_missing_art(slots, beats, force=args.force, on_progress=_progress)
+        generate_missing_art(
+            slots, beats, previous_manifest=previous_manifest,
+            force=args.force, on_progress=_progress,
+        )
 
     print("\nStep 4/4  Writing manifest...")
-    manifest = build_manifest(slots)
+    manifest = build_manifest(
+        slots, beats, beats_source=str(beats_path),
+        unmatched_reference_files=scan.unmatched,
+        previous_manifest=previous_manifest,
+    )
     result = write_manifest(manifest)
 
     elapsed_total = time.time() - start

@@ -523,7 +523,9 @@ def test_manifest_entry_shape():
     assert manifest["beats_source"] == "output/beats.json"
     assert manifest["beats_generated_at"] == "2026-08-24T00:00:00Z"
     assert manifest["unmatched_reference_files"] == []
-    assert manifest["stale_beat_ids"] == []
+    # No previous_manifest given — a first run treats every slot as newly
+    # appearing, so its beat_ids are (correctly) reported stale.
+    assert sorted(manifest["stale_beat_ids"]) == ["s1b1", "s2b1"]
     assert manifest["s3_ok"] is None
     assert manifest["s3_reason"]
 

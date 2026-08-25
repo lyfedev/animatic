@@ -4,16 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import boto3
-from botocore.exceptions import ClientError
-
-from animatic.config import settings
 from animatic.core.beat_extractor import Beat
+from animatic.core.s3_writer import put_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -66,23 +62,20 @@ def _write_local(beat_list: dict[str, Any]) -> None:
 
 
 def _write_s3(beat_list: dict[str, Any]) -> str:
-    """Write beat list to S3, return S3 URI."""
-    bucket = settings.media_bucket
-    try:
-        # Use named profile locally; in ECS the task role is used automatically
-        profile = os.environ.get("AWS_PROFILE", "newaccount") if settings.environment == "development" else None
-        session = boto3.Session(profile_name=profile)
-        s3 = session.client("s3", region_name=settings.aws_region)
-        body = json.dumps(beat_list, indent=2).encode("utf-8")
-        s3.put_object(
-            Bucket=bucket,
-            Key=_S3_KEY,
-            Body=body,
-            ContentType="application/json",
-        )
-        uri = f"s3://{bucket}/{_S3_KEY}"
-        logger.info("Beat list written to %s", uri)
-        return uri
-    except ClientError as e:
-        logger.warning("S3 write failed (%s) — local output only", e)
+    """Write beat list to S3, return S3 URI.
+
+    Routes through the shared `s3_writer.put_bytes` (T-03-05 honesty) —
+    session/profile handling now lives in one place. The return contract is
+    unchanged from before this refactor (a real `s3://...` URI on success,
+    a `local://...` marker on failure) so Phase 2's API and CLI stay
+    untouched; only the log level moves from WARNING to ERROR, and the
+    `local://` marker is now returned from the one place that genuinely
+    knows the write failed rather than being fabricated inline.
+    """
+    body = json.dumps(beat_list, indent=2).encode("utf-8")
+    result = put_bytes(_S3_KEY, body, content_type="application/json")
+    if not result.ok:
+        logger.error("S3 write failed (%s) — local output only", result.error)
         return f"local://{_LOCAL_OUTPUT}"
+    logger.info("Beat list written to %s", result.uri)
+    return result.uri
