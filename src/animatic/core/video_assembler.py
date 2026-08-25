@@ -34,7 +34,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from animatic.core.shot_sources import ShotSource, resolve_shot
+from animatic.core.beat_overrides import apply as apply_override
+from animatic.core.beat_overrides import load_overrides
+from animatic.core.shot_sources import ShotSource, find_dailies, resolve_shot
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +76,10 @@ class Shot:
     source: ShotSource
     audio_path: Path | None
     music_path: Path | None
+    # Non-empty only for a daily: the beats this one shot stands in for. The
+    # cut has fewer shots than beats when a daily is spliced, and a manifest
+    # that did not say which beats vanished would be lying by omission.
+    covers_beat_ids: tuple[str, ...] = ()
 
     def to_entry(self) -> dict[str, Any]:
         return {
@@ -88,6 +94,9 @@ class Shot:
             "shot_source_reason": self.source.reason,
             "audio_path": str(self.audio_path) if self.audio_path else None,
             "music_path": str(self.music_path) if self.music_path else None,
+            "covers_beat_ids": list(self.covers_beat_ids),
+            "uses_own_audio": self.source.carries_own_audio,
+            "hand_made": self.source.is_hand_made,
         }
 
 
@@ -97,6 +106,8 @@ def plan_shots(
     scene: int | None = None,
     ignore_footage: bool = False,
     ignore_motion: bool = False,
+    ignore_dailies: bool = False,
+    ignore_edits: bool = False,
 ) -> list[Shot]:
     """Resolve every beat into a Shot without encoding anything.
 
@@ -111,34 +122,127 @@ def plan_shots(
     """
     clips = {c["beat_id"]: c for c in audio_index.get("clips", [])}
     music = _music_by_beat(audio_index)
+    overrides = load_overrides()
+
+    ordered_beats = sorted(beats_doc["beats"], key=lambda b: (b["scene"], b["beat"]))
+    dailies = (
+        {} if ignore_dailies
+        else find_dailies([b["beat_id"] for b in ordered_beats])
+    )
 
     shots: list[Shot] = []
-    for beat in beats_doc["beats"]:
+    for beat in ordered_beats:
         if scene is not None and beat["scene"] != scene:
             continue
 
-        clip = clips.get(beat["beat_id"])
+        beat_id = beat["beat_id"]
+        source = _resolve(
+            beat_id, ignore_footage, ignore_motion, ignore_edits, dailies
+        )
+
+        # A daily covers several beats with one take. Only its FIRST beat
+        # becomes a shot; the rest are represented by that shot and would
+        # otherwise be encoded twice. The take also plays its own length and
+        # brings its own sound, so neither the beats' planned durations nor
+        # their synthesised clips apply to it.
+        if source.daily_span is not None:
+            if not source.daily_span.is_start(beat_id):
+                continue
+            shots.append(_daily_shot(beat, source, ordered_beats, clips))
+            continue
+
+        clip = clips.get(beat_id)
         secs, secs_source, secs_reason = _shot_length(beat, clip)
-        audio_path = _playable(clip)
+        secs, secs_source, secs_reason = apply_override(
+            beat_id, secs, secs_source, secs_reason, overrides
+        )
 
         shots.append(
             Shot(
-                beat_id=beat["beat_id"],
+                beat_id=beat_id,
                 scene=beat["scene"],
                 beat=beat["beat"],
                 secs=secs,
                 secs_source=secs_source,
                 secs_reason=secs_reason,
-                source=_resolve(beat["beat_id"], ignore_footage, ignore_motion),
-                audio_path=audio_path,
-                music_path=music.get(beat["beat_id"]),
+                source=source,
+                audio_path=_playable(clip),
+                music_path=music.get(beat_id),
             )
         )
 
     return sorted(shots, key=lambda s: (s.scene, s.beat))
 
 
-def _resolve(beat_id: str, ignore_footage: bool, ignore_motion: bool) -> ShotSource:
+def _daily_shot(
+    beat: dict[str, Any],
+    source: ShotSource,
+    ordered_beats: list[dict[str, Any]],
+    clips: dict[str, dict[str, Any]],
+) -> Shot:
+    """One shot for a whole daily span, at the take's own length.
+
+    The developer chose "the daily plays whole; the cut gets shorter or
+    longer" together with "the daily carries its own production sound", and
+    those two answers are what make each other safe. A take that plays its own
+    length no longer matches the runtime of the beats it replaces — but its
+    sound arrives with its picture, so there is nothing left to desync.
+    """
+    span = source.daily_span
+    measured = probe_duration(span.path)
+    planned = round(
+        sum(
+            _shot_length(b, clips.get(b["beat_id"]))[0]
+            for b in ordered_beats
+            if b["beat_id"] in span.beat_ids
+        ),
+        2,
+    )
+    delta = round(measured - planned, 2)
+    direction = "shorter" if delta < 0 else "longer"
+    silent = not has_audio_stream(span.path)
+    if silent:
+        logger.warning(
+            "%s carries no audio stream; %d beat(s) of narration are replaced "
+            "by silence",
+            span.path,
+            len(span.beat_ids),
+        )
+
+    return Shot(
+        beat_id=span.start_beat_id,
+        scene=beat["scene"],
+        beat=beat["beat"],
+        secs=round(measured, 2),
+        secs_source="daily",
+        secs_reason=(
+            f"the daily at {span.path} runs {measured:.2f}s and plays whole; "
+            f"the {len(span.beat_ids)} beat(s) it covers ({span.span_id}) "
+            f"planned {planned:.2f}s, so the cut is {abs(delta):.2f}s "
+            f"{direction} than the beat list"
+            + (
+                ". IT CARRIES NO AUDIO STREAM, so this span is silent — the "
+                "synthesised narration for those beats is not used and nothing "
+                "replaces it"
+                if silent else ""
+            )
+        ),
+        source=source,
+        # None: the take's own audio stream is used instead, so no synthesised
+        # clip and no music cue is laid over it.
+        audio_path=None,
+        music_path=None,
+        covers_beat_ids=tuple(span.beat_ids),
+    )
+
+
+def _resolve(
+    beat_id: str,
+    ignore_footage: bool,
+    ignore_motion: bool,
+    ignore_edits: bool = False,
+    dailies: dict[str, Any] | None = None,
+) -> ShotSource:
     """Resolve a shot's picture, optionally skipping levels of the ladder.
 
     Implemented by pointing the ignored level at a directory that cannot
@@ -151,6 +255,8 @@ def _resolve(beat_id: str, ignore_footage: bool, ignore_motion: bool) -> ShotSou
         beat_id,
         footage_dir=nowhere if ignore_footage else None,
         motion_dir=nowhere if ignore_motion else None,
+        edited_dir=nowhere if ignore_edits else None,
+        dailies=dailies,
     )
 
 
@@ -239,6 +345,26 @@ def _video_input(shot: Shot) -> list[str]:
     return ["-i", str(shot.source.path)]
 
 
+def has_audio_stream(path: Path) -> bool:
+    """Whether a media file actually carries sound.
+
+    A daily is assumed to bring production sound, but a silent export is an
+    easy mistake and the failure is silent in the worst way — a stretch of cut
+    with no audio at all where five beats of narration used to be.
+    """
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-select_streams", "a",
+            "-show_entries", "stream=index",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
 def _video_filter(shot: Shot) -> str:
     scale = (
         f"scale={FRAME_WIDTH}:{FRAME_HEIGHT}:force_original_aspect_ratio=decrease,"
@@ -258,6 +384,23 @@ def _audio_graph(shot: Shot, video_arg_count: int) -> tuple[list[str], str, str 
     at all gets silence rather than no track — a concat of segments where some
     have audio and some do not desynchronises.
     """
+    # A daily brings production sound. Mapping the video input's own audio is
+    # the whole implementation — no filter, no mix, no pad, because the sound
+    # is exactly as long as the picture it came with.
+    if shot.source.carries_own_audio:
+        if has_audio_stream(shot.source.path):
+            return [], f"[0:a]aresample={AUDIO_RATE}[a]", "[a]"
+        # A daily exported without sound. Silence rather than a failed encode,
+        # and `_daily_shot` has already said so in the shot's reason — a
+        # stretch of cut that is silent where five beats of narration used to
+        # be is exactly the kind of thing that reads as "the audio broke".
+        return (
+            ["-f", "lavfi", "-t", f"{shot.secs:.3f}",
+             "-i", f"anullsrc=r={AUDIO_RATE}:cl=stereo"],
+            f"[1:a]aresample={AUDIO_RATE}[a]",
+            "[a]",
+        )
+
     inputs: list[str] = []
     next_index = 1  # 0 is the video
 

@@ -143,12 +143,15 @@ def _dry_run(shots: list) -> None:
         by_source[shot.source.kind] = by_source.get(shot.source.kind, 0) + 1
         if shot.secs_source == "beat_duration":
             fallbacks.append(shot.beat_id)
-        silent = "" if shot.audio_path else "   (no audio)"
-        music = "  + music" if shot.music_path else ""
-        print(
-            f"  {shot.beat_id:>6}  {shot.secs:5.2f}s  {shot.source.kind:<8}"
-            f"{music}{silent}"
-        )
+        if shot.source.carries_own_audio:
+            # Not "no audio" — the take brings its own, which is the whole
+            # point of the daily and the opposite of what that would say.
+            sound = f"   own sound, covers {len(shot.covers_beat_ids)} beats"
+        elif shot.audio_path:
+            sound = "  + music" if shot.music_path else ""
+        else:
+            sound = "   (no audio)"
+        print(f"  {shot.beat_id:>6}  {shot.secs:5.2f}s  {shot.source.kind:<8}{sound}")
 
     print(f"\nsources: {by_source}")
     widened = [s for s in shots if s.secs_source == "audio_floor"]

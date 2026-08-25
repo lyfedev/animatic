@@ -44,7 +44,12 @@ from google import genai
 from google.genai import types
 
 from animatic.config import settings
-from animatic.core.panel_prompt import PROMPT_TEMPLATE_VERSION, build_panel_prompt, shot_size_for
+from animatic.core.panel_prompt import (
+    PROMPT_TEMPLATE_VERSION,
+    build_conditioned_prompt,
+    build_panel_prompt,
+    shot_size_for,
+)
 from animatic.core.slot_resolver import Slot, _slugify
 
 logger = logging.getLogger(__name__)
@@ -62,23 +67,59 @@ class PanelGenerationError(Exception):
     """Raised when a generation response carries no inline image data."""
 
 
-def generate_panel(beat: dict[str, Any], prompt: str) -> tuple[bytes, str]:
-    """Generate one image for `beat` from `prompt`.
+def generate_panel(
+    beat: dict[str, Any],
+    prompt: str,
+    plates: list[Path] | None = None,
+) -> tuple[bytes, str]:
+    """Generate one image for `beat` from `prompt`, optionally seeded by plates.
 
     Returns (image_bytes, mime_type) — mime type is read from the response
     rather than assumed (RESEARCH Pitfall 3: don't assume PNG).
+
+    **`plates` lifts D-08.** Phase 4 generated panels from text alone, so the
+    character and location art Phase 3 produced was never read by anything —
+    which meant pointing a character at a model sheet changed the art file and
+    changed no panel. Passing the beat's slot plates as reference images makes
+    the panel a composition of art that has already been reviewed.
+
+    Proven before it was built (backlog S-03, 2026-08-24): a character plate
+    plus a location plate returned one panel carrying the character's build and
+    clothing and the room's ring, benches and fittings.
+
+    **The known risk is the facial rule.** The S-03 spike panel had facial
+    features. The rule lives in the prompt, and a seed image can overrule a
+    prompt, so the clause is repeated after the plates rather than before them —
+    the same "rule that matters lands last" discipline that Phase 4 paid two
+    revision passes to learn.
 
     Raises:
         PanelGenerationError: no part of the response carried inline image
             data.
     """
     client = genai.Client(api_key=settings.google_api_key)
+    plates = [p for p in (plates or []) if p.exists()]
 
-    logger.info("Generating panel for beat %s", beat.get("beat_id", "?"))
+    logger.info(
+        "Generating panel for beat %s%s",
+        beat.get("beat_id", "?"),
+        f" from {len(plates)} plate(s)" if plates else "",
+    )
+
+    if plates:
+        contents: Any = [
+            types.Part.from_bytes(
+                data=plate.read_bytes(),
+                mime_type="image/png" if plate.suffix.lower() == ".png" else "image/jpeg",
+            )
+            for plate in plates
+        ] + [prompt]
+    else:
+        contents = prompt
 
     response = client.models.generate_content(
         model=f"models/{settings.gemini_image_model}",
-        contents=prompt,
+        contents=contents,
         config=types.GenerateContentConfig(
             response_modalities=["IMAGE"],
             image_config=types.ImageConfig(aspect_ratio="16:9"),
@@ -177,19 +218,49 @@ def _dependent_slot_records(
     return records
 
 
-def _generate_with_retry(beat: dict[str, Any], prompt: str) -> tuple[bytes, str]:
+def _generate_with_retry(
+    beat: dict[str, Any], prompt: str, plates: list[Path] | None = None
+) -> tuple[bytes, str]:
     """Call `generate_panel`, retrying once after `_RETRY_DELAY_SECS` on
     failure. The second failure propagates to the caller, which records it.
     """
     try:
-        return generate_panel(beat, prompt)
+        return generate_panel(beat, prompt, plates)
     except Exception as first_err:  # noqa: BLE001 — retried once, then re-raised
         logger.warning(
             "Panel generation failed for beat %s (attempt 1): %s — retrying in %ss",
             beat.get("beat_id", "?"), first_err, _RETRY_DELAY_SECS,
         )
         time.sleep(_RETRY_DELAY_SECS)
-        return generate_panel(beat, prompt)
+        return generate_panel(beat, prompt, plates)
+
+
+def _slot_plates(
+    location_slot: Slot,
+    character_slots: list[Slot],
+    manifest_by_id: dict[str, dict[str, Any]],
+) -> list[Path]:
+    """The art files this beat's panel should be composed from.
+
+    Location first, then characters, so the room is established before the
+    figures are placed in it — the order S-03's successful spike used.
+
+    Deduplicated by path: several minor characters share one generic art file
+    (Phase 3's D-05), and sending the same plate three times spends the tokens
+    without adding information.
+    """
+    plates: list[Path] = []
+    seen: set[str] = set()
+    for slot in [location_slot, *character_slots]:
+        entry = manifest_by_id.get(slot.slot_id, {})
+        uri = entry.get("art_uri") or ""
+        if not uri or uri in seen:
+            continue
+        path = Path(uri)
+        if path.exists():
+            seen.add(uri)
+            plates.append(path)
+    return plates
 
 
 def _build_entry(
@@ -243,6 +314,7 @@ def generate_missing_panels(
     on_progress: ProgressCallback | None = None,
     beats_source: str = "output/beats.json",
     manifest_source: str = "output/assets/manifest.json",
+    condition_on_plates: bool = False,
 ) -> dict[str, Any]:
     """Build one index entry per beat, in beat order, writing the index
     after each entry is resolved.
@@ -297,6 +369,17 @@ def generate_missing_panels(
         location_slot, character_slots = resolve_beat_slots(beat, slots)
         dependent = _dependent_slot_records(location_slot, character_slots, manifest_by_id)
         prompt, facial_features, facial_features_reason = build_panel_prompt(beat, shot_size)
+
+        # D-08 lifted: when the beat's slots have art on disk, the panel is
+        # composed FROM it rather than redrawn from a description of it. That
+        # is what makes a character model sheet visible in the cut.
+        plates = (
+            _slot_plates(location_slot, character_slots, manifest_by_id)
+            if condition_on_plates else []
+        )
+        if plates:
+            prompt = build_conditioned_prompt(prompt)
+
         cache_key = panel_cache_key(beat, shot_size, dependent, PROMPT_TEMPLATE_VERSION)
         asset_slots_used = [location_slot.slot_id] + [s.slot_id for s in character_slots]
 
@@ -329,7 +412,7 @@ def generate_missing_panels(
             continue
 
         try:
-            image_bytes, mime_type = _generate_with_retry(beat, prompt)
+            image_bytes, mime_type = _generate_with_retry(beat, prompt, plates)
         except Exception as e:  # noqa: BLE001 — one bad beat must not abort the run
             reason = f"{type(e).__name__}: {e}"
             entry = _build_entry(
