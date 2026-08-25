@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from google import genai
@@ -27,6 +28,7 @@ from google.genai import types
 
 from animatic.config import settings
 from animatic.core.audio_timing import narration_budget_words
+from animatic.core.style import _strip_on_screen_text
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +71,24 @@ def narration_beats(beats: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [b for b in beats if not b.get("dialogue")]
 
 
+def action_line(beat: dict[str, Any]) -> str:
+    """A beat's action, with on-screen-text directives removed.
+
+    A screenplay's title-card instructions are directions to the production,
+    not events in the room. Phase 3 learned this when "SUPERIMPOSE ... 'NOVEMBER
+    12, 1975 - PHILADELPHIA'" was painted into a panel as literal lettering;
+    the same line reached the narrator here and came back as the word "Text."
+    read aloud. `style._strip_on_screen_text` already removes exactly this
+    class of directive and is already tested, so it is reused rather than
+    reimplemented.
+
+    Falls back to the raw content when stripping leaves nothing — a beat whose
+    entire action is a title card still needs something to narrate.
+    """
+    stripped = re.sub(r"\s{2,}", " ", _strip_on_screen_text(beat["content"])).strip()
+    return stripped.lstrip(".:;, ") or beat["content"]
+
+
 def build_narration_prompt(beats: list[dict[str, Any]]) -> str:
     """One prompt covering the whole run, grouped by scene.
 
@@ -85,7 +105,7 @@ def build_narration_prompt(beats: list[dict[str, Any]]) -> str:
         budget = narration_budget_words(beat["duration_secs"])
         blocks.append(
             f"  {beat['beat_id']} ({beat['duration_secs']}s, at most {budget} words)\n"
-            f"    action: {beat['content']}"
+            f"    action: {action_line(beat)}"
         )
 
     return (
@@ -115,7 +135,7 @@ def write_narration(beats: list[dict[str, Any]]) -> dict[str, str]:
         text = (written.get(beat["beat_id"]) or "").strip()
         if not text:
             text = _truncate_to_budget(
-                beat["content"], narration_budget_words(beat["duration_secs"])
+                action_line(beat), narration_budget_words(beat["duration_secs"])
             )
             logger.warning(
                 "no narration returned for %s; falling back to a truncated "
@@ -127,21 +147,108 @@ def write_narration(beats: list[dict[str, Any]]) -> dict[str, str]:
 
 
 def shorten(text: str, target_words: int) -> str:
-    """Cut a narration line that overran, keeping it a readable phrase.
+    """Rewrite a narration line that overran, to `target_words` or fewer.
 
-    Used only after a clip has been measured over its beat. Deliberately
-    deterministic — a second model call to shorten a line that is already
-    short buys nothing and can come back longer.
+    The first implementation of this was deterministic truncation, on the
+    reasoning that a second model call to shorten an already-short line buys
+    nothing. That reasoning was wrong, and the first full run showed how:
+    8 of 31 narration lines came back as fragments — "Rocky closes his.",
+    "and spit on the.", "Rocky looks up. The." A word-boundary cut is not a
+    sentence, and a narrator reading one sounds broken.
+
+    So the line is rewritten by the model, which can drop a clause and keep a
+    sentence. `_truncate_to_budget` remains as the fallback for when that call
+    fails, but it is now clause-aware rather than a raw slice.
     """
-    return _truncate_to_budget(text, max(2, target_words))
+    target = max(2, target_words)
+    words = text.split()
+    if len(words) <= target:
+        return text.strip()
+
+    rewritten = _call_rewrite(text, target)
+    if rewritten and len(rewritten.split()) <= target:
+        return rewritten
+    if rewritten:
+        logger.warning(
+            "rewrite came back at %d words against a %d-word target; trimming",
+            len(rewritten.split()),
+            target,
+        )
+        return _truncate_to_budget(rewritten, target)
+    return _truncate_to_budget(text, target)
+
+
+def _call_rewrite(text: str, target: int) -> str | None:
+    """One short call to say the same thing in fewer words. None on failure."""
+    try:
+        client = genai.Client(api_key=settings.google_api_key)
+        response = client.models.generate_content(
+            model=f"models/{settings.gemini_model}",
+            contents=(
+                f"Rewrite this narration line in {target} words or fewer. Keep "
+                f"the most important thing that happens and drop the rest. "
+                f"Return one complete sentence and nothing else.\n\n{text}"
+            ),
+        )
+        out = (response.text or "").strip().strip('"')
+    except Exception as exc:  # noqa: BLE001 — falls back to the trim
+        logger.warning("narration rewrite failed (%s); trimming instead", exc)
+        return None
+    return out or None
+
+
+# A line that ends on one of these is a fragment, not a sentence. Used to walk
+# a deterministic trim back to somewhere it can legitimately stop.
+_DANGLING = frozenset(
+    """a an the and or but so of to in on at by for with from into onto upon as
+    his her its their our your my this that these those is are was were be been
+    being had has have will would could should may might must than then while
+    when where who whom which what whose""".split()
+)
 
 
 def _truncate_to_budget(text: str, budget: int) -> str:
-    words = text.split()
-    if len(words) <= budget:
+    """Trim to `budget` words without ending mid-thought.
+
+    Prefers to drop whole trailing sentences, then a trailing clause at a
+    comma, and only then walks back word by word off anything that cannot end
+    a sentence.
+    """
+    if len(text.split()) <= budget:
         return text.strip()
-    kept = " ".join(words[:budget]).rstrip(",;:- ")
-    return kept if kept.endswith(".") else f"{kept}."
+
+    # Whole sentences first — the cleanest cut there is.
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    if len(sentences) > 1:
+        kept: list[str] = []
+        for sentence in sentences:
+            candidate = kept + [sentence]
+            if len(" ".join(candidate).split()) > budget and kept:
+                break
+            kept = candidate
+        if kept and len(" ".join(kept).split()) <= budget:
+            return " ".join(kept).strip()
+        text = sentences[0]
+
+    # Then a trailing clause.
+    words = text.split()
+    if len(words) > budget:
+        head = " ".join(words[:budget])
+        if "," in head:
+            clause = head.rsplit(",", 1)[0].strip()
+            if len(clause.split()) >= 2:
+                return _finish(clause)
+        words = words[:budget]
+
+    # Then back off anything that cannot end a sentence.
+    while len(words) > 2 and words[-1].strip(".,;:-").lower() in _DANGLING:
+        words = words[:-1]
+    return _finish(" ".join(words))
+
+
+def _finish(text: str) -> str:
+    text = text.rstrip(",;:- ").strip()
+    return text if text.endswith((".", "!", "?")) else f"{text}."
 
 
 def _call_narration(beats: list[dict[str, Any]]) -> dict[str, str]:

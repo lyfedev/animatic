@@ -73,6 +73,22 @@ PYTHONPATH=src python scripts/build_panels.py
 # beat's content, change a beat's shot size, or replace a dependent slot's
 # art and re-run — only the affected panels redraw, and everything else
 # stays cached.
+
+# 9. Cast voices, write narration, and synthesise audio for every beat
+PYTHONPATH=src python scripts/build_audio.py
+# Each beat gets one clip: the script's own line for a dialogue beat, a
+# narration line written to fit the beat for everything else. Characters
+# are cast once and keep their voice across runs. Music is generated where
+# the SCRIPT specifies a cue (a radio, a record player), described by its
+# staging rather than by any song it names.
+# --dry-run reports the plan and the cue prompts without spending a call.
+# --only <beat_id> / --scene N narrow generation, never the index.
+
+# 10. Assemble the audio into one track to listen to
+PYTHONPATH=src python scripts/preview_audio.py
+# Every clip end to end at its own shot length, music mixed under the beats
+# that carry it. A review artifact, not the cut — Phase 7 builds the video.
+# --scene N previews one scene. Needs ffmpeg on PATH.
 ```
 
 ## Deploying to AWS

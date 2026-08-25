@@ -123,8 +123,17 @@ def _report(index: dict, elapsed: float) -> None:
     print(f"\n{index['total_clips']} clip(s) in {elapsed:.1f}s")
     print(
         f"  generated {index['generated_count']}, reused {index['reused_count']}, "
+        f"kept-after-failure {index.get('kept_after_failure_count', 0)}, "
         f"failed {index['failed_count']}"
     )
+    if index.get("halted_reason"):
+        print(f"\n  ** RUN HALTED ** {index['halted_reason']}")
+    stale = index.get("stale_beat_ids") or []
+    if stale:
+        print(
+            f"  {len(stale)} clip(s) behind {index['audio_template_version']} "
+            f"(playable, not current): {', '.join(stale)}"
+        )
     print(
         f"  {index['dialogue_count']} dialogue, {index['narration_count']} narration"
     )

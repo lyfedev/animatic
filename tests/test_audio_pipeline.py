@@ -24,7 +24,7 @@ from animatic.core.audio_generator import (
     speech_prompt,
 )
 from animatic.core.audio_manifest import build_index, write_clip
-from animatic.core.audio_timing import narration_budget_words
+from animatic.core.audio_timing import narration_budget_words, pcm_to_wav
 
 DIALOGUE_BEAT = {
     "beat_id": "s2b5",
@@ -83,18 +83,105 @@ class TestNarrationPlanning:
         prompt = narration.build_narration_prompt([SILENT_BEAT])
         assert "present tense" in prompt
 
-    def test_shorten_cuts_to_the_target(self):
-        text = "A dark and tense fight club interior at night with a crowd"
-        assert len(narration.shorten(text, 4).split()) == 4
+    def test_shorten_leaves_a_short_line_alone_without_a_call(self):
+        with patch.object(narration, "_call_rewrite") as rewrite:
+            assert narration.shorten("A dark club.", 10) == "A dark club."
+        rewrite.assert_not_called()
 
-    def test_shorten_never_returns_nothing(self):
-        assert narration.shorten("One two three", 0).split()
+    def test_the_model_rewrite_is_used_when_it_fits(self):
+        with patch.object(narration, "_call_rewrite", return_value="Rocky closes the locker."):
+            out = narration.shorten("The promoter hands over cash and leaves, "
+                                    "and Rocky closes his locker door", 5)
+        assert out == "Rocky closes the locker."
 
-    def test_shorten_leaves_a_short_line_alone(self):
-        assert narration.shorten("A dark club.", 10) == "A dark club."
+    def test_an_oversized_rewrite_is_trimmed_rather_than_trusted(self):
+        with patch.object(narration, "_call_rewrite", return_value="One two three four five six"):
+            out = narration.shorten("a b c d e f g h i j", 3)
+        assert len(out.split()) <= 3
 
-    def test_a_shortened_line_still_ends_as_a_sentence(self):
-        assert narration.shorten("A dark club at night, crowded and loud", 4).endswith(".")
+
+class TestNoFragments:
+    """Regression: the first full run produced 8 fragment narration lines.
+
+    "Rocky closes his.", "and spit on the.", "Rocky looks up. The." — all from
+    a word-boundary truncation that had no idea where a sentence could end.
+    These assert on the TEXT PRODUCED, not on whether a strip function is
+    called, so a future rewrite of the trim is still held to the outcome.
+    """
+
+    # The real overrunning lines from that run, with the budget each was cut to.
+    REAL_CASES = [
+        ("Inside the Blue Door Fight Club at night.", 4),
+        ("Spectators heckle and take bets, while a woman shouts from the crowd.", 10),
+        ("Fighters shadowbox, smoke, listen to the radio, and spit on the floor.", 11),
+        ("Rocky looks up. The promoter stands over him.", 4),
+        ("The promoter gives cash and exits. Rocky closes his locker.", 9),
+        ("Rocky exits the trolley and walks down the street.", 5),
+        ("When the water boils, Rocky plunges his swollen hand into it.", 8),
+    ]
+
+    @pytest.mark.parametrize("text,budget", REAL_CASES)
+    def test_a_trimmed_line_never_ends_on_a_dangling_word(self, text, budget):
+        out = narration._truncate_to_budget(text, budget)
+        last = out.rstrip(".!?").split()[-1].lower()
+        assert last not in narration._DANGLING, out
+
+    @pytest.mark.parametrize("text,budget", REAL_CASES)
+    def test_a_trimmed_line_is_within_budget(self, text, budget):
+        assert len(narration._truncate_to_budget(text, budget).split()) <= budget
+
+    @pytest.mark.parametrize("text,budget", REAL_CASES)
+    def test_a_trimmed_line_ends_as_a_sentence(self, text, budget):
+        assert narration._truncate_to_budget(text, budget).endswith((".", "!", "?"))
+
+    def test_whole_sentences_are_dropped_before_words_are_cut(self):
+        text = "Rocky looks up. The promoter stands over him holding a clipboard."
+        assert narration._truncate_to_budget(text, 5) == "Rocky looks up."
+
+    def test_a_trailing_clause_is_dropped_at_the_comma(self):
+        text = "Spectators heckle and take bets, while a woman shouts from the crowd"
+        out = narration._truncate_to_budget(text, 7)
+        assert out == "Spectators heckle and take bets."
+
+    def test_it_still_returns_something_for_an_absurd_budget(self):
+        assert narration._truncate_to_budget("One two three four five", 1).split()
+
+
+class TestOnScreenTextIsNotNarrated:
+    """Regression: the narrator read a SUPERIMPOSE directive as the word "Text."
+
+    Same defect class Phase 3 hit when a title card was painted into a panel as
+    literal lettering. Asserted on the built prompt and on the resolved text.
+    """
+
+    SUPERIMPOSED = {
+        **SILENT_BEAT,
+        "content": (
+            "Superimpose over action: 'NOVEMBER 12, 1975 - PHILADELPHIA'. The club "
+            "resembles a large unemptied trash-can with a tiny ring."
+        ),
+    }
+
+    def test_the_directive_is_stripped_from_the_action_line(self):
+        line = narration.action_line(self.SUPERIMPOSED)
+        assert "superimpose" not in line.lower()
+        assert "NOVEMBER 12" not in line
+
+    def test_the_room_survives_the_strip(self):
+        assert "trash-can" in narration.action_line(self.SUPERIMPOSED)
+
+    def test_no_directive_reaches_the_prompt(self):
+        prompt = narration.build_narration_prompt([self.SUPERIMPOSED])
+        assert "superimpose" not in prompt.lower()
+        assert "NOVEMBER 12" not in prompt
+
+    def test_a_beat_that_is_only_a_title_card_still_gets_narrated(self):
+        only_card = {**SILENT_BEAT, "content": "SUPERIMPOSE: 'THE END'"}
+        assert narration.action_line(only_card).strip()
+
+    def test_the_generator_fallback_also_strips(self):
+        _, text, _, _, _ = resolve_beat_audio(self.SUPERIMPOSED, CAST, {}, "Charon")
+        assert "superimpose" not in text.lower()
 
     def test_a_beat_the_model_skipped_still_gets_text(self):
         with patch.object(narration, "_call_narration", return_value={}):
@@ -175,7 +262,49 @@ class TestRateLimitHandling:
         assert audio_generator._retry_after_secs(exc) <= audio_generator._RETRY_DELAY_CAP_SECS
 
     def test_pacing_keeps_the_run_under_the_per_minute_cap(self):
-        assert 60.0 / audio_generator._TTS_MIN_INTERVAL_SECS <= 10
+        # With headroom: a narration beat that overruns spends two calls
+        # inside one beat's interval, so pacing exactly at the cap still trips.
+        assert 60.0 / audio_generator._TTS_MIN_INTERVAL_SECS <= 9
+
+    def test_a_quota_error_gets_more_than_one_retry(self, monkeypatch):
+        # A network fault may never clear; a quota window is guaranteed to.
+        monkeypatch.setattr(audio_generator.time, "sleep", lambda _: None)
+        calls: list[int] = []
+
+        def always_429(*_a, **_k):
+            calls.append(1)
+            raise RuntimeError("429 RESOURCE_EXHAUSTED 'retryDelay': '1s'")
+
+        monkeypatch.setattr(audio_generator, "synthesize_speech", always_429)
+        with pytest.raises(RuntimeError):
+            audio_generator._call_with_retry("t", "Puck", "d", "s1b1")
+        assert len(calls) == audio_generator._QUOTA_RETRIES + 1
+
+    def test_a_network_fault_gets_exactly_one_retry(self, monkeypatch):
+        monkeypatch.setattr(audio_generator.time, "sleep", lambda _: None)
+        calls: list[int] = []
+
+        def always_reset(*_a, **_k):
+            calls.append(1)
+            raise RuntimeError("Connection reset by peer")
+
+        monkeypatch.setattr(audio_generator, "synthesize_speech", always_reset)
+        with pytest.raises(RuntimeError):
+            audio_generator._call_with_retry("t", "Puck", "d", "s1b1")
+        assert len(calls) == 2
+
+    def test_a_retry_that_succeeds_returns_its_result(self, monkeypatch):
+        monkeypatch.setattr(audio_generator.time, "sleep", lambda _: None)
+        attempts: list[int] = []
+
+        def fail_once(*_a, **_k):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise RuntimeError("429 RESOURCE_EXHAUSTED 'retryDelay': '1s'")
+            return b"PCM", 1.5
+
+        monkeypatch.setattr(audio_generator, "synthesize_speech", fail_once)
+        assert audio_generator._call_with_retry("t", "Puck", "d", "s1b1") == (b"PCM", 1.5)
 
     def test_pacing_waits_between_back_to_back_calls(self, monkeypatch):
         slept: list[float] = []
@@ -190,6 +319,274 @@ class TestRateLimitHandling:
         audio_generator._last_tts_call_at = 0.0
         audio_generator._pace_tts()
         assert not slept
+
+
+class TestDailyQuota:
+    """Regression: the v2 run turned a complete index into 39 good + 10 failed.
+
+    The cap it hit was not the per-minute one it looked like. It was
+    `generate_requests_per_model_per_day, limit: 100`, answering with
+    `retryDelay: 43424s` — twelve hours. The run marched all ten remaining
+    beats into the same wall, and each one replaced a working v1 entry with a
+    failure record even though the v1 clip was still on disk.
+    """
+
+    DAILY = RuntimeError(
+        "429 RESOURCE_EXHAUSTED generate_requests_per_model_per_day, limit: 100 "
+        "{'@type': 'RetryInfo', 'retryDelay': '43424s'}"
+    )
+    PER_MINUTE = RuntimeError(
+        "429 RESOURCE_EXHAUSTED {'@type': 'RetryInfo', 'retryDelay': '54s'}"
+    )
+
+    def test_a_daily_cap_is_told_apart_from_a_per_minute_one(self):
+        raw_daily = audio_generator._retry_after_secs(self.DAILY, cap=False)
+        raw_minute = audio_generator._retry_after_secs(self.PER_MINUTE, cap=False)
+        threshold = audio_generator._DAILY_QUOTA_THRESHOLD_SECS
+        assert raw_daily >= threshold
+        assert raw_minute < threshold
+
+    def test_capping_first_would_hide_the_difference(self):
+        # Why _retry_after_secs grew a `cap` parameter at all.
+        assert audio_generator._retry_after_secs(
+            self.DAILY
+        ) == audio_generator._retry_after_secs(
+            RuntimeError("429 RESOURCE_EXHAUSTED 'retryDelay': '99999s'")
+        )
+
+    def test_a_daily_cap_raises_rather_than_sleeping_for_hours(self, monkeypatch):
+        slept: list[float] = []
+        monkeypatch.setattr(audio_generator.time, "sleep", slept.append)
+        monkeypatch.setattr(
+            audio_generator, "synthesize_speech",
+            lambda *a, **k: (_ for _ in ()).throw(self.DAILY),
+        )
+        with pytest.raises(audio_generator.DailyQuotaExhausted):
+            audio_generator._call_with_retry("t", "Puck", "d", "s1b1")
+        assert not slept
+
+    def test_no_retry_can_ever_sleep_past_the_cap(self):
+        assert (
+            audio_generator._RETRY_DELAY_CAP_SECS
+            < audio_generator._DAILY_QUOTA_THRESHOLD_SECS
+        )
+
+    def test_a_failed_beat_keeps_its_existing_clip(self, tmp_path):
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(b"RIFF")
+        previous = {
+            **build_beat_entry(SILENT_BEAT, "narration", "the good line", "Charon",
+                               "r", 1.9, "f", "k1"),
+            "source": "generated",
+            "local_path": str(clip),
+            "audio_template_version": "v1",
+        }
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "new", "Charon", "r", "k2", previous,
+            RuntimeError("boom"),
+        )
+        assert entry["text"] == "the good line"
+        assert entry["audio_secs"] == 1.9
+        assert entry["source"] == "reused_after_failure"
+        assert entry["stale"] is True
+
+    def test_the_kept_entry_says_why_it_is_behind(self, tmp_path):
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(b"RIFF")
+        previous = {
+            **build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                               1.9, "f", "k1"),
+            "source": "generated", "local_path": str(clip),
+            "audio_template_version": "v1",
+        }
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "new", "Charon", "r", "k2", previous,
+            RuntimeError("boom"),
+        )
+        assert "v1" in entry["source_reason"]
+        assert AUDIO_TEMPLATE_VERSION in entry["stale_reason"]
+
+    def test_a_disk_recovered_clip_admits_its_text_does_not_match(
+        self, tmp_path, monkeypatch
+    ):
+        # The recovered file predates the text this run planned. Captioning it
+        # from `text` would put words on screen that are not being spoken.
+        monkeypatch.setattr(audio_generator, "LOCAL_AUDIO_DIR", tmp_path)
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        failed_previous = {
+            **build_beat_entry(SILENT_BEAT, "narration", "the NEW line", "Charon",
+                               "r", 0.0, "f", "k"),
+            "source": "generation_failed",
+        }
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "the NEW line", "Charon", "r", "k",
+            failed_previous, RuntimeError("boom"),
+        )
+        assert entry["local_path"] == str(clip)
+        assert entry["text_matches_audio"] is False
+        assert entry["audio_template_version"] == "unknown"
+
+    def test_a_disk_recovered_clip_is_remeasured_not_assumed(
+        self, tmp_path, monkeypatch
+    ):
+        # Criterion 5 has to hold for a recovered clip too, and the length in
+        # the stale entry is not the length of the file on disk.
+        monkeypatch.setattr(audio_generator, "LOCAL_AUDIO_DIR", tmp_path)
+        (tmp_path / "s1b1.wav").write_bytes(pcm_to_wav(b"\x00\x01" * 24000 * 3))
+        failed_previous = {
+            **build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                               0.0, "f", "k"),
+            "source": "generation_failed",
+        }
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k",
+            failed_previous, RuntimeError("boom"),
+        )
+        assert entry["audio_secs"] == pytest.approx(3.0, abs=0.05)
+        assert entry["shot_secs"] >= entry["audio_secs"]
+
+    def test_text_mismatches_are_listed_for_downstream_phases(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(audio_generator, "LOCAL_AUDIO_DIR", tmp_path)
+        (tmp_path / "s1b1.wav").write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k",
+            {**build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                                0.0, "f", "k"), "source": "generation_failed"},
+            RuntimeError("boom"),
+        )
+        index = build_index([entry], [], {}, {}, "b.json", "Charon", "v2")
+        assert index["text_mismatch_beat_ids"] == ["s1b1"]
+
+    def test_a_stale_entry_is_never_a_cache_hit(self, tmp_path):
+        """Otherwise the recovery defeats itself.
+
+        A clip rescued from disk carries the cache key of the text it FAILED
+        to generate. Treated as a hit, it is never fixed and the index quietly
+        claims a current clip for stale audio.
+        """
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        kind, text, voice, _, _ = resolve_beat_audio(
+            SILENT_BEAT, CAST, {"s1b1": "a line"}, "Charon"
+        )
+        key = audio_cache_key(SILENT_BEAT, kind, text, voice, AUDIO_TEMPLATE_VERSION)
+        stale_previous = {
+            **build_beat_entry(SILENT_BEAT, kind, text, voice, "r", 1.0, "f", key),
+            "source": "reused_after_failure",
+            "local_path": str(clip),
+            "stale": True,
+        }
+
+        with patch(
+            "animatic.core.audio_generator.synthesize_fitted",
+            return_value=(b"RIFF", 1.0, text, "regenerated"),
+        ) as synth, patch(
+            "animatic.core.audio_generator.write_clip",
+            return_value=("h", clip, "s3://x", True, "ok"),
+        ):
+            entry = audio_generator._resolve_one(
+                SILENT_BEAT, CAST, {"s1b1": "a line"}, "Charon",
+                previous=stale_previous, force=False,
+            )
+        synth.assert_called_once()
+        assert entry["source"] == "generated"
+        assert not entry.get("stale")
+
+    def test_an_unstale_entry_with_a_matching_key_still_hits(self, tmp_path):
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        kind, text, voice, _, _ = resolve_beat_audio(
+            SILENT_BEAT, CAST, {"s1b1": "a line"}, "Charon"
+        )
+        key = audio_cache_key(SILENT_BEAT, kind, text, voice, AUDIO_TEMPLATE_VERSION)
+        fresh = {
+            **build_beat_entry(SILENT_BEAT, kind, text, voice, "r", 1.0, "f", key),
+            "source": "generated",
+            "local_path": str(clip),
+        }
+        with patch("animatic.core.audio_generator.synthesize_fitted") as synth:
+            entry = audio_generator._resolve_one(
+                SILENT_BEAT, CAST, {"s1b1": "a line"}, "Charon",
+                previous=fresh, force=False,
+            )
+        synth.assert_not_called()
+        assert entry["source"] == "reused"
+
+    def test_the_mismatch_flag_survives_a_second_pass(self, tmp_path):
+        """It must key off provenance, not off which recovery path ran.
+
+        The v2 repair took two passes: one that recovered clips from disk, and
+        a later one that carried those entries forward again. Keying the flag
+        off the disk-recovery branch alone lost it on the second pass, and the
+        index went back to claiming current text for stale audio.
+        """
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        recovered = {
+            **build_beat_entry(SILENT_BEAT, "narration", "the new line", "Charon",
+                               "r", 1.0, "f", "k"),
+            "source": "reused_after_failure",
+            "local_path": str(clip),
+            "audio_template_version": "unknown",
+            "stale": True,
+        }
+        again = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "the new line", "Charon", "r", "k",
+            recovered, RuntimeError("boom"),
+        )
+        assert again["text_matches_audio"] is False
+
+    def test_a_genuinely_current_clip_is_not_flagged(self, tmp_path):
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(pcm_to_wav(b"\x00\x01" * 24000))
+        current = {
+            **build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                               1.0, "f", "k"),
+            "source": "generated",
+            "local_path": str(clip),
+            "audio_template_version": AUDIO_TEMPLATE_VERSION,
+        }
+        kept = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k",
+            current, RuntimeError("boom"),
+        )
+        assert kept["text_matches_audio"] is True
+
+    def test_a_beat_with_no_previous_clip_is_still_a_failure(self):
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k", None,
+            RuntimeError("boom"),
+        )
+        assert entry["source"] == "generation_failed"
+
+    def test_a_previous_entry_whose_file_is_gone_is_not_resurrected(self):
+        previous = {
+            **build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                               1.9, "f", "k1"),
+            "source": "generated", "local_path": "/nonexistent/gone.wav",
+        }
+        entry = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k", previous,
+            RuntimeError("boom"),
+        )
+        assert entry["source"] == "generation_failed"
+
+    def test_kept_clips_are_counted_and_listed_separately(self, tmp_path):
+        clip = tmp_path / "s1b1.wav"
+        clip.write_bytes(b"RIFF")
+        kept = audio_generator._entry_after_failure(
+            SILENT_BEAT, "narration", "t", "Charon", "r", "k",
+            {**build_beat_entry(SILENT_BEAT, "narration", "t", "Charon", "r",
+                                1.9, "f", "k1"),
+             "source": "generated", "local_path": str(clip)},
+            RuntimeError("boom"),
+        )
+        index = build_index([kept], [], {}, {}, "b.json", "Charon", "v2")
+        assert index["kept_after_failure_count"] == 1
+        assert index["generated_count"] == 0
+        assert index["failed_count"] == 0
+        assert index["stale_beat_ids"] == ["s1b1"]
 
 
 class TestCacheKey:
@@ -213,7 +610,7 @@ class TestCacheKey:
         assert self._key(beat=longer) != self._key()
 
     def test_changing_the_template_version_invalidates_everything(self):
-        assert self._key(template_version="v2") != self._key()
+        assert self._key(template_version="some-other-version") != self._key()
 
 
 class TestBeatEntry:
@@ -243,7 +640,7 @@ class TestBeatEntry:
 
 class TestWriteClip:
     def test_a_beat_id_shaped_name_is_accepted(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("animatic.core.audio_manifest._LOCAL_AUDIO_DIR", tmp_path)
+        monkeypatch.setattr("animatic.core.audio_manifest.LOCAL_AUDIO_DIR", tmp_path)
         monkeypatch.setattr(
             "animatic.core.audio_manifest.put_bytes",
             lambda *a, **k: type("R", (), {"uri": "s3://x", "ok": True, "error": None})(),
@@ -253,12 +650,12 @@ class TestWriteClip:
 
     def test_a_content_derived_name_is_refused(self, tmp_path, monkeypatch):
         # Mirrors panel_manifest: no path segment is ever built from beat text.
-        monkeypatch.setattr("animatic.core.audio_manifest._LOCAL_AUDIO_DIR", tmp_path)
+        monkeypatch.setattr("animatic.core.audio_manifest.LOCAL_AUDIO_DIR", tmp_path)
         with pytest.raises(AssertionError):
             write_clip("../../etc/passwd", b"RIFF", "audio/wav")
 
     def test_a_music_cue_id_is_accepted(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("animatic.core.audio_manifest._LOCAL_AUDIO_DIR", tmp_path)
+        monkeypatch.setattr("animatic.core.audio_manifest.LOCAL_AUDIO_DIR", tmp_path)
         monkeypatch.setattr(
             "animatic.core.audio_manifest.put_bytes",
             lambda *a, **k: type("R", (), {"uri": "s3://x", "ok": True, "error": None})(),

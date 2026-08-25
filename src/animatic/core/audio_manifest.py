@@ -26,7 +26,7 @@ from animatic.core.s3_writer import put_bytes
 
 logger = logging.getLogger(__name__)
 
-_LOCAL_AUDIO_DIR = Path("output/audio")
+LOCAL_AUDIO_DIR = Path("output/audio")
 _LOCAL_INDEX = Path("output/audio/index.json")
 _S3_INDEX_KEY = "audio/index.json"
 _S3_AUDIO_PREFIX = "audio"
@@ -58,7 +58,7 @@ def write_clip(
     ext = _EXT_FOR_MIME.get(mime_type.split(";")[0].strip(), "wav")
     filename = f"{prefix}{Path(clip_id).name}.{ext}"
 
-    local_path = _LOCAL_AUDIO_DIR / filename
+    local_path = LOCAL_AUDIO_DIR / filename
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path.write_bytes(audio_bytes)
 
@@ -107,6 +107,18 @@ def build_index(
         "generated_count": sum(1 for e in ordered if e["source"] == "generated"),
         "reused_count": sum(1 for e in ordered if e["source"] == "reused"),
         "failed_count": sum(1 for e in ordered if e["source"] == "generation_failed"),
+        # A clip kept because its regeneration could not run is neither a
+        # success nor a failure, and counting it as either would misreport the
+        # corpus. It is playable, and it is behind — both facts are recorded.
+        "kept_after_failure_count": sum(
+            1 for e in ordered if e["source"] == "reused_after_failure"
+        ),
+        "stale_beat_ids": sorted(e["beat_id"] for e in ordered if e.get("stale")),
+        # Clips whose file predates the text the index records for them. Phase 7
+        # must not caption these from `text`, and Phase 9 must not display it.
+        "text_mismatch_beat_ids": sorted(
+            e["beat_id"] for e in ordered if e.get("text_matches_audio") is False
+        ),
         "shots_widened_count": len(widened),
         "shots_widened_secs": round(
             sum(e["shot_secs"] - e["beat_duration_secs"] for e in widened), 2

@@ -22,9 +22,9 @@ length. So every clip is measured after generation:
   so the *shot* widens instead and records why, exactly as Phase 2's dialogue
   floor did
 
-Generation stays sequential, as in Phase 4 (D-10): this backend's real
-per-minute limits for TTS were not measured, and 49 short calls do not need
-the risk.
+Generation stays sequential, as in Phase 4 (D-10), and paced: this backend
+caps the TTS model at 10 requests per minute AND 100 per day per project, both
+found the hard way. Concurrency would buy nothing against either.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ import json
 import logging
 import re
 import time
+import wave
 from pathlib import Path
 from typing import Any, Callable
 
@@ -43,6 +44,7 @@ from google.genai import types
 from animatic.config import settings
 from animatic.core import narration as narration_mod
 from animatic.core.audio_manifest import (
+    LOCAL_AUDIO_DIR,
     build_index,
     load_previous_index,
     write_clip,
@@ -63,21 +65,49 @@ logger = logging.getLogger(__name__)
 
 ProgressCallback = Callable[[dict[str, Any], str, float], None]
 
-AUDIO_TEMPLATE_VERSION = "v1"
+# v1 -> v2: narration planning recalibrated from 2.2 to 1.8 words/sec against
+# the first full run's 31 measured clips, the overrun repair changed from a
+# word-boundary truncation to a model rewrite (v1 produced 8 fragment lines),
+# and on-screen-text directives are now stripped before the narrator sees them
+# (v1 read a SUPERIMPOSE directive aloud as the word "Text").
+AUDIO_TEMPLATE_VERSION = "v2"
 
 _RETRY_DELAY_SECS = 2
 
-# Measured on the first full run: this backend caps the TTS model at 10
-# requests per minute per project, and the run was issuing them every ~4s.
-# Beat 44 of 49 came back 429 with `retryDelay: 54s` — a quota, not a network
-# blip, so the flat 2s retry that works for panels could never clear it.
+# Per-minute cap, found on the first full run: 10 requests/minute per project,
+# while the run was issuing them every ~4s. Beat 44 of 49 came back 429 with
+# `retryDelay: 54s` — a quota, not a network blip, so the flat 2s retry that
+# works for panels could never clear it.
 #
-# Two changes follow from that, and both are needed. Pacing keeps the run
-# under the cap so the error mostly does not happen; the 429-aware retry
-# waits the interval the server itself names when it happens anyway (another
-# process sharing the project quota, say).
-_TTS_MIN_INTERVAL_SECS = 6.5
+# Pacing keeps the run under the cap so the error mostly does not happen; the
+# 429-aware retry waits the interval the server names when it happens anyway.
+# 6.5s (9.2 req/min) still tripped it — the limiter measures a rolling window,
+# and a narration beat that overruns spends TWO calls inside one beat's
+# interval. 7.5s is 8 req/min.
+_TTS_MIN_INTERVAL_SECS = 7.5
 _RETRY_DELAY_CAP_SECS = 120
+
+# A per-minute quota error is worth more than one retry — the window it waits
+# for is guaranteed to open shortly, unlike a network fault which may not clear
+# at all. A per-DAY quota is a different animal entirely; see below.
+_QUOTA_RETRIES = 2
+
+# The v2 run found the limit that actually matters, and it is not the
+# per-minute one: this backend also caps the TTS model at **100 requests per
+# day per project**, and answered `retryDelay: 43424s` — twelve hours. No
+# amount of pacing reaches that, and no retry should wait it out inside a run.
+#
+# Two consequences. A wait longer than this threshold is a daily cap, not a
+# blip, so the run stops rather than marching the remaining beats into the same
+# wall (the v2 run failed ten in a row before it ran out of beats). And
+# `_RETRY_DELAY_CAP_SECS` stays well under it so no retry can ever sleep for
+# half a day.
+_DAILY_QUOTA_THRESHOLD_SECS = 900
+
+
+class DailyQuotaExhausted(Exception):
+    """Raised when the per-day request cap is hit — the run cannot continue."""
+
 
 _last_tts_call_at: float = 0.0
 
@@ -91,11 +121,13 @@ def _pace_tts() -> None:
     _last_tts_call_at = time.time()
 
 
-def _retry_after_secs(exc: Exception) -> float | None:
+def _retry_after_secs(exc: Exception, cap: bool = True) -> float | None:
     """The delay a 429 asks for, if it asked for one.
 
-    Read from the server's own `RetryInfo` rather than guessed, and capped so
-    a malformed or hostile value cannot stall a run indefinitely.
+    Read from the server's own `RetryInfo` rather than guessed. With
+    `cap=False` the raw value is returned, which is how the caller tells a
+    per-minute quota (tens of seconds) from a per-day one (tens of thousands);
+    capping first would make the two indistinguishable.
     """
     text = str(exc)
     if "RESOURCE_EXHAUSTED" not in text and "429" not in text:
@@ -105,7 +137,9 @@ def _retry_after_secs(exc: Exception) -> float | None:
         match = re.search(r"retry in (\d+(?:\.\d+)?)s", text)
     if not match:
         return float(_RETRY_DELAY_CAP_SECS)
-    return min(float(match.group(1)) + 1.0, float(_RETRY_DELAY_CAP_SECS))
+    delay = float(match.group(1)) + 1.0
+    return min(delay, float(_RETRY_DELAY_CAP_SECS)) if cap else delay
+
 
 # `lyria-3-clip-preview` returned a 30.8s stereo MP3 for a one-paragraph
 # prompt; `lyria-3-pro-preview` returned 175s. A cue in this cut is 5.9s and
@@ -249,7 +283,10 @@ def resolve_beat_audio(
         text = " ".join(ln["line"] for ln in lines)
         return "dialogue", text, voice, reason, dialogue_direction(beat, character)
 
-    text = narration_text.get(beat["beat_id"], beat["content"])
+    # Falls back to the beat's own action line with title-card directives
+    # already stripped — never the raw content, or the narrator reads a
+    # SUPERIMPOSE instruction aloud.
+    text = narration_text.get(beat["beat_id"]) or narration_mod.action_line(beat)
     return (
         "narration",
         text,
@@ -322,21 +359,36 @@ def _call_with_retry(
     and the server says when that is. Retrying a 429 after 2 seconds just
     spends a second call to fail the same way.
     """
-    try:
-        return synthesize_speech(text, voice, direction)
-    except Exception as exc:  # noqa: BLE001 — retried, then raised
-        delay = _retry_after_secs(exc)
-        if delay is None:
-            logger.warning("TTS failed for %s (%s); retrying once", beat_id, exc)
-            delay = _RETRY_DELAY_SECS
-        else:
-            logger.warning(
-                "TTS rate-limited on %s; waiting %.0fs as the server asked",
-                beat_id,
-                delay,
-            )
-        time.sleep(delay)
-        return synthesize_speech(text, voice, direction)
+    attempt = 0
+    while True:
+        try:
+            return synthesize_speech(text, voice, direction)
+        except Exception as exc:  # noqa: BLE001 — retried, then raised
+            delay = _retry_after_secs(exc, cap=False)
+            if delay is not None and delay >= _DAILY_QUOTA_THRESHOLD_SECS:
+                raise DailyQuotaExhausted(
+                    f"per-day request cap reached on {TTS_MODEL}: the server "
+                    f"asks for {delay / 3600:.1f}h. Stopping rather than "
+                    f"failing every remaining beat against the same wall."
+                ) from exc
+            delay = None if delay is None else min(delay, _RETRY_DELAY_CAP_SECS)
+            attempt += 1
+            budget = _QUOTA_RETRIES if delay is not None else 1
+            if attempt > budget:
+                raise
+            if delay is None:
+                logger.warning("TTS failed for %s (%s); retrying once", beat_id, exc)
+                delay = _RETRY_DELAY_SECS
+            else:
+                logger.warning(
+                    "TTS rate-limited on %s (attempt %d of %d); waiting %.0fs as "
+                    "the server asked",
+                    beat_id,
+                    attempt,
+                    budget,
+                    delay,
+                )
+            time.sleep(delay)
 
 
 def build_beat_entry(
@@ -400,10 +452,15 @@ def generate_missing_audio(
     cast = _resolve_cast(beats, previous, force=force)
     narrator_voice = previous.get("narrator_voice") or NARRATOR_VOICE
 
+    # A narration line is stale when the template that planned it is stale,
+    # not only when the beat is new. Without this, changing the words-per-second
+    # constant or the overrun repair silently regenerates 49 clips of the OLD
+    # text — the cache key moves, the prose does not.
+    template_changed = previous.get("audio_template_version") != AUDIO_TEMPLATE_VERSION
     needs_narration = [
         b for b in selected
         if not b.get("dialogue")
-        and (force or b["beat_id"] not in previous_by_id)
+        and (force or template_changed or b["beat_id"] not in previous_by_id)
     ]
     narration_text = _resolve_narration(beats, needs_narration, previous_by_id)
 
@@ -421,15 +478,44 @@ def generate_missing_audio(
         entry["source_reason"] = "outside this run's selection; carried forward"
 
     started = time.time()
+    halted: str | None = None
     for index_pos, beat in enumerate(selected, start=1):
-        entry = _resolve_one(
-            beat,
-            cast=cast,
-            narration_text=narration_text,
-            narrator_voice=narrator_voice,
-            previous=previous_by_id.get(beat["beat_id"]),
-            force=force,
-        )
+        try:
+            entry = _resolve_one(
+                beat,
+                cast=cast,
+                narration_text=narration_text,
+                narrator_voice=narrator_voice,
+                previous=previous_by_id.get(beat["beat_id"]),
+                force=force,
+            )
+        except DailyQuotaExhausted as exc:
+            # Stop, and carry every remaining beat forward from the previous
+            # index. Marching on would fail each of them identically and turn
+            # a complete index into a mostly-failed one — which is exactly what
+            # the v2 run did before this existed.
+            halted = str(exc)
+            logger.error("%s — halted at %s", halted, beat["beat_id"])
+            for remaining in selected[index_pos - 1:]:
+                prior = previous_by_id.get(remaining["beat_id"])
+                if not prior:
+                    continue
+                # Route through the same recovery a per-beat failure uses, so
+                # a beat whose previous entry is ITSELF a failure record still
+                # gets its on-disk clip back. Carrying the record forward
+                # verbatim would leave a hole in the cut.
+                kind, text, voice, voice_reason, _ = resolve_beat_audio(
+                    remaining, cast, narration_text, narrator_voice
+                )
+                key = audio_cache_key(
+                    remaining, kind, text, voice, AUDIO_TEMPLATE_VERSION
+                )
+                entries.append(
+                    _entry_after_failure(
+                        remaining, kind, text, voice, voice_reason, key, prior, exc
+                    )
+                )
+            break
         entries.append(entry)
 
         index = build_index(
@@ -463,6 +549,7 @@ def generate_missing_audio(
         entries, music, cast, beats_doc, beats_source, narrator_voice,
         AUDIO_TEMPLATE_VERSION,
     )
+    final["halted_reason"] = halted
     write_index(final)
     return final
 
@@ -504,10 +591,14 @@ def _resolve_narration(
     when at least one beat actually needs it — a re-run that reuses every clip
     should spend nothing.
     """
+    stale = {b["beat_id"] for b in needs}
     text = {
         beat_id: entry["text"]
         for beat_id, entry in previous_by_id.items()
-        if entry.get("kind") == "narration"
+        # A beat being re-planned must not keep its old line as a seed: if the
+        # new call omits it, falling back to the text the re-plan exists to
+        # replace is worse than falling back to the action line.
+        if entry.get("kind") == "narration" and beat_id not in stale
     }
     if needs:
         text.update(narration_mod.write_narration(beats))
@@ -599,9 +690,14 @@ def _resolve_one(
     )
     key = audio_cache_key(beat, kind, text, voice, AUDIO_TEMPLATE_VERSION)
 
+    # A stale entry is playable but behind, and behind means regenerate as soon
+    # as it is possible to. Without this the recovery path defeats itself: a
+    # clip rescued from disk carries the cache key of the text it FAILED to
+    # generate, so the next run reads a hit and never fixes it.
     if (
         not force
         and previous
+        and not previous.get("stale")
         and previous.get("cache_key") == key
         and previous.get("local_path")
         and Path(previous["local_path"]).exists()
@@ -616,15 +712,13 @@ def _resolve_one(
         wav, secs, final_text, fit_reason = synthesize_fitted(
             beat, kind, text, voice, direction
         )
+    except DailyQuotaExhausted:
+        raise
     except Exception as exc:  # noqa: BLE001 — one beat failing is not the run
         logger.error("audio generation failed for %s: %s", beat["beat_id"], exc)
-        entry = build_beat_entry(
-            beat, kind, text, voice, voice_reason, 0.0,
-            f"{type(exc).__name__}: {exc}", key,
+        return _entry_after_failure(
+            beat, kind, text, voice, voice_reason, key, previous, exc
         )
-        entry["source"] = "generation_failed"
-        entry["source_reason"] = f"{type(exc).__name__}: {exc}"
-        return entry
 
     # A rewritten narration line changes the cache key it should be stored
     # under, or the next run regenerates it every time.
@@ -647,3 +741,124 @@ def _resolve_one(
         "source_reason": fit_reason,
     })
     return entry
+
+
+def _entry_after_failure(
+    beat: dict[str, Any],
+    kind: str,
+    text: str,
+    voice: str,
+    voice_reason: str,
+    key: str,
+    previous: dict[str, Any] | None,
+    exc: Exception,
+) -> dict[str, Any]:
+    """Record a failure without throwing away a clip that already works.
+
+    The v2 run turned a complete 49-clip index into 39 good entries and 10
+    failures, even though all ten beats still had a perfectly playable v1 clip
+    sitting on disk. A regeneration that cannot complete is a reason to keep
+    what you have, not to discard it — the same judgement Phase 4 reached when
+    a paid call went unavailable mid-run.
+
+    So a beat whose regeneration failed keeps its previous entry, and the entry
+    says exactly what it is: an older template's clip, retained, with the
+    failure that stopped it being replaced. `stale` marks it for the next run;
+    nothing downstream has to guess.
+    """
+    failure = f"{type(exc).__name__}: {exc}"
+
+    # A previous entry that is ITSELF a failure record has no clip to keep —
+    # but the beat may still have a playable file from an earlier run, because
+    # clip paths are conventional (`output/audio/<beat_id>.wav`) and a failed
+    # generation never deletes what is there. Recovering it is the difference
+    # between a cut that is behind and a cut with holes in it. Provenance is
+    # unknown in that case and the entry says so.
+    if previous and not previous.get("local_path"):
+        previous = _previous_from_disk(beat, previous) or previous
+
+    if previous and previous.get("local_path") and Path(previous["local_path"]).exists():
+        logger.warning(
+            "%s kept its %s clip: regeneration failed (%s)",
+            beat["beat_id"],
+            previous.get("audio_template_version", "previous"),
+            type(exc).__name__,
+        )
+        # The audio matches the index's `text` only if it was generated FOR
+        # that text. A clip whose provenance is unknown, or whose entry was
+        # itself a failure record (its text was planned, never spoken), fails
+        # that test — and the flag has to key off provenance rather than off
+        # which recovery path happened to run, or a second pass through here
+        # silently drops it.
+        text_matches = not (
+            previous.get("audio_template_version") == "unknown"
+            or previous.get("source") == "generation_failed"
+            or previous.get("text_matches_audio") is False
+        )
+        return {
+            **previous,
+            "text_matches_audio": text_matches,
+            "source": "reused_after_failure",
+            "source_reason": (
+                f"regeneration to {AUDIO_TEMPLATE_VERSION} failed, so the "
+                f"existing {previous.get('audio_template_version', 'previous')} "
+                f"clip was kept rather than discarded — {failure[:200]}"
+            ),
+            "stale": True,
+            "stale_reason": (
+                f"generated under {previous.get('audio_template_version', 'an '
+                'earlier template')}; re-run to bring it to "
+                f"{AUDIO_TEMPLATE_VERSION}"
+            ),
+        }
+
+    entry = build_beat_entry(
+        beat, kind, text, voice, voice_reason, 0.0, failure, key
+    )
+    entry["source"] = "generation_failed"
+    entry["source_reason"] = failure
+    return entry
+
+
+def _previous_from_disk(
+    beat: dict[str, Any], previous: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Recover a playable clip for a beat whose index entry has none.
+
+    Clip paths are conventional, and a failed generation never deletes what is
+    already there — so a beat recorded as `generation_failed` on one run can
+    still have a real clip on disk from an earlier one. Its duration is
+    measured from the file rather than taken from the stale entry, so the shot
+    is fitted to the audio that actually exists.
+
+    Returns None when nothing is on disk. Provenance is unknowable this way,
+    which the caller records.
+    """
+    path = LOCAL_AUDIO_DIR / f"{Path(beat['beat_id']).name}.wav"
+    if not path.exists():
+        return None
+
+    try:
+        with wave.open(str(path), "rb") as w:
+            secs = w.getnframes() / w.getframerate()
+    except (wave.Error, OSError) as exc:
+        logger.warning("clip at %s is unreadable (%s)", path, exc)
+        return None
+
+    shot_secs, shot_source, shot_reason = fit_shot_secs(beat["duration_secs"], secs)
+    return {
+        **previous,
+        "audio_secs": round(secs, 2),
+        "shot_secs": shot_secs,
+        "shot_secs_source": shot_source,
+        "shot_secs_reason": shot_reason,
+        "mime_type": "audio/wav",
+        "local_path": str(path),
+        "content_hash": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "audio_template_version": "unknown",
+        # The entry's `text` is what this run WANTED spoken; the file predates
+        # it and says something else. Anything that shows the text alongside
+        # the audio — subtitles in Phase 7, the UI in Phase 9 — has to know
+        # they disagree, so the disagreement is a field rather than a footnote.
+        "text_matches_audio": False,
+    }

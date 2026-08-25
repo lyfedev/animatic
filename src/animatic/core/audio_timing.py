@@ -40,8 +40,17 @@ TTS_SAMPLE_RATE = 24000
 TTS_SAMPLE_WIDTH = 2
 TTS_CHANNELS = 1
 
-# The slow end of the measured range, for planning narration length.
-SAFE_WORDS_PER_SEC = 2.2
+# Recalibrated against all 31 narration clips of the first full run, which is
+# a far better sample than the four smoke-test clips above:
+#
+#   min 1.56 · p10 1.82 · median 2.16 · p90 2.50 · max 2.92
+#
+# The first pass planned at 2.2 — the median — and 11 of 31 beats overran,
+# because planning at the median means roughly half of everything is too long
+# by construction. Planning near p10 puts most beats inside their budget on
+# the first call and leaves the measured-fit path to handle the tail, which is
+# what it is for.
+SAFE_WORDS_PER_SEC = 1.8
 
 # A shot needs a breath at the end or the cut lands on the last consonant.
 TAIL_PAD_SECS = 0.15

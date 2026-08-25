@@ -486,6 +486,107 @@ confirmed signage lettering `s5b4`), plus one already-carried Phase 3 item (`#4`
 garment shape). None block Phase 7 — re-evaluate in the assembled cut; `--force --only
 <beat_id>` regenerates one panel in isolation if any read badly in motion.
 
+## Phase 5 — Audio Contract
+
+What Phases 6 and 7 read without re-deriving it — same register as the Beat, Asset Slot and
+Panel Contracts above.
+
+**Where it lives.** `output/audio/index.json` locally, `audio/index.json` in the media bucket.
+Clips: `output/audio/<beat_id>.wav` locally, `audio/<beat_id>.wav` in S3, 24kHz 16-bit mono.
+Music: `output/audio/music_<cue_id>.mp3`, stereo 44.1kHz. The index names `beats_source` and
+`beats_generated_at` so it ties back to its input, and carries its own honest `s3_ok`/
+`s3_reason`.
+
+**`shot_secs` is the field Phase 7 cuts on — not `duration_secs`.** This is the one place the
+audio index overrides the beat list, and it is the mechanism that makes ROADMAP criterion 5
+true. Each entry carries `beat_duration_secs` (what Phase 2 planned), `audio_secs` (what the
+clip actually measured) and `shot_secs` (what the shot must be), plus `shot_secs_source` —
+`page_budget` when the beat already covered its audio, `audio_floor` when the audio forced the
+shot wider — and `shot_secs_reason` stating the arithmetic. `shot_secs >= audio_secs` for every
+entry, by construction. In the current corpus 44 of 49 shots keep their page budget and 5 were
+widened, +5.66s in total, so the cut runs 261.4s against the beat list's 255.7s.
+
+**Why widen rather than clip.** Same rule Phase 2 applied with its dialogue floor: a script line
+is not ours to cut, so the shot yields to the speech. Narration is ours to write, so it yields
+instead — an overrunning narration line is rewritten to the rate its own clip just measured and
+regenerated once. Only if that still overruns does the shot widen on a narration beat.
+
+**Measured, not assumed.** Speech rate is the phase's central fact and it was measured twice:
+four smoke clips before any code, then all 31 narration clips of the first full run (min 1.56,
+p10 1.82, median 2.16, p90 2.50, max 2.92 words/sec). Planning at the median made half the beats
+overrun by construction, so `audio_timing.SAFE_WORDS_PER_SEC` is 1.8 — near p10. Every clip is
+still measured after generation; the constant only plans text length. Index-vs-file duration
+drift is 0.0000s across all 49.
+
+**Silence is trimmed before anything is measured.** Every TTS clip arrives with ~0.25s of
+lead-in and ~0.3-0.5s of trail-out, independent of length. On a 2.2s beat that padding is a
+third of the shot. `audio_timing.trim_silence` removes the ends and keeps interior pauses,
+which are delivery, not padding.
+
+**Voices.** One `voice` per entry with a `voice_reason`. A character is cast once and the cast
+is stored in the index, so a re-run reuses it — re-casting each run would give a character a
+different voice between runs, which is what criterion 2 forbids. `NARRATOR_VOICE` is reserved
+and never cast to a character, so narration stays audibly distinct. The model casts; a
+deterministic guard then enforces every-part-cast, no-two-share, and not-the-narrator, recording
+each intervention in the reason. Current cast: ROCKY Iapetus, CORNERMAN Rasalgethi, BLACK
+FIGHTER Fenrir, ANNOUNCER Orus, PROMOTER Schedar, FIGHTER #1 Zephyr, FIGHTER #2 Umbriel, FAN
+Puck, WOMAN Callirrhoe; narrator Charon.
+
+**Music cues come from the SCRIPT, not the beat list.** `music_cues.find_music_cues` reads the
+PDF scene text, unwraps it into sentences, and matches the sound sources a screenplay names
+(radio, phonograph, record player, jukebox, band). Two cues in scenes 1-8: scene 3's dressing-
+room radio (`s3b5`) and scene 8's phonograph (`s8b4`, `s8b5`). A script naming none produces
+none. Each cue records `beat_ids`, `total_secs` and a reason quoting the script line.
+
+**Named works are stripped before the prompt is built.** The script calls for a specific 1958
+single by title; handing that title to a music model asks it to reproduce a copyrighted
+recording. The cue is described by its staging instead — the phonograph, the room, the crackle.
+Asserted on the built prompt string (`tests/test_music_cues.py`), never by reading the source
+for a strip call, including a planted-title case so the guard is tested rather than the luck
+that the real script keeps its title on a non-matching line.
+
+**On-screen-text directives never reach the narrator.** Reuses Phase 3's
+`style._strip_on_screen_text`. v1 read scene 2's SUPERIMPOSE directive aloud as the word
+"Text."
+
+**What the cache key covers.** `audio_generator.audio_cache_key` hashes `beat_id`, `kind`,
+`text`, `voice`, `duration_secs` and `AUDIO_TEMPLATE_VERSION`. `duration_secs` is in the payload
+unlike the panel key, because a changed duration means a changed narration budget. Bumping
+`AUDIO_TEMPLATE_VERSION` re-plans narration as well as invalidating clips — the v1→v2 bump is
+the worked example.
+
+**Two rate limits, and the second one is the one that bites.** This backend caps the TTS model
+at **10 requests/minute** AND **100 requests/day per project**. The per-minute cap is handled by
+pacing (`_TTS_MIN_INTERVAL_SECS`, 7.5s) plus a 429 that waits the interval the server names in
+its own `RetryInfo`. The per-day cap cannot be paced around: it answers `retryDelay: 43424s`
+(twelve hours), and a full run costs 49 calls plus one per overrunning narration retry, so **two
+full runs in a day exhausts it.** A wait longer than `_DAILY_QUOTA_THRESHOLD_SECS` is recognised
+as the daily cap and raises `DailyQuotaExhausted`, which halts the run.
+
+**A failed regeneration never costs a working clip.** Three rules, each paid for by the v2 run:
+
+1. A beat whose regeneration fails keeps its existing clip (`source: reused_after_failure`)
+   rather than becoming a failure record. Before this, the v2 run turned a complete 49-clip
+   index into 39 good entries and 10 failures while all ten clips sat playable on disk.
+2. A beat whose previous entry has no clip is looked up on disk by the naming convention, and
+   re-measured from the file — a failed generation never deletes what is already there.
+3. The run **halts** on a daily cap and carries every remaining beat forward through the same
+   recovery, rather than marching them into the same wall one at a time.
+
+**Three index fields carry the resulting honesty**, and Phases 6/7/9 must read them:
+`stale_beat_ids` (playable but behind the current template — re-run when quota allows),
+`text_mismatch_beat_ids` (**the clip predates the `text` the index records for it — do not
+caption or display `text` for these**), and `halted_reason` (non-null when a run stopped early).
+A stale entry is never treated as a cache hit, or the recovery would defeat itself: a rescued
+clip carries the cache key of the text it failed to generate.
+
+**Current corpus state (2026-08-25):** 49/49 playable, 0 failed, 35 current at v2, 14 stale of
+which 10 carry v1 audio. Criterion 5 holds across all 49. Clearing the stale set needs one
+`PYTHONPATH=src python scripts/build_audio.py` after the daily quota resets.
+
+**`--scene`/`--only` narrow generation, never the index** — the whole-index rule, inherited from
+Phase 4 and tested here.
+
 ## Deadline
 
 2026-09-09 14:00 PDT
