@@ -1,0 +1,990 @@
+{
+  "generated_at": "2026-08-24T20:26:17.911877+00:00",
+  "script": "rocky-1976",
+  "scenes": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "total_beats": 49,
+  "total_duration_secs": 255.7,
+  "pct_motion_candidates": 8.2,
+  "beats": [
+    {
+      "beat_id": "s1b1",
+      "scene": 1,
+      "beat": 1,
+      "scene_heading": "INT. BLUE DOOR FIGHT CLUB - NIGHT",
+      "type": "establishing",
+      "content": "Establishing shot of the dark, tense interior of the Blue Door Fight Club at night.",
+      "duration_secs": 2.2,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing shot sets up the location, time, and mood of the scene. [scene fitted to 2.2s from script page geometry at 54 lines/60s]",
+      "characters": [],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b1",
+      "scene": 2,
+      "beat": 1,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "establishing",
+      "content": "Superimpose over action: 'NOVEMBER 12, 1975 - PHILADELPHIA'. The club resembles a large unemptied trash-can with a tiny ring and dim overhead lights.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing shot introducing the date, location, and dingy atmosphere of the boxing venue. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b2",
+      "scene": 2,
+      "beat": 2,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "Thirty-year-old Rocky Balboa trades blows with a Black Fighter. The opponent lands fast combinations, but Rocky grins and plods forward relentlessly.",
+      "duration_secs": 8.8,
+      "duration_source": "page_budget",
+      "motion_candidate": true,
+      "reason": "Establishes the physical dynamic and fighting styles of both boxers in the ring. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "BLACK FIGHTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b3",
+      "scene": 2,
+      "beat": 3,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "Spectators in smoky ringside seats heckle for blood while people hustle bets, including a housewife shouting from the balcony.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Captures the gritty crowd environment and betting atmosphere of the arena. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b4",
+      "scene": 2,
+      "beat": 4,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "The bell rings for the end of the round. A beer can is heaved into the ring while the Black Fighter spits blood into a bucket.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Action transition as the round ends and fighters head to their respective corners. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "BLACK FIGHTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b5",
+      "scene": 2,
+      "beat": 5,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "The Black Fighter sneers across the ring at Rocky while talking to his cornerman.",
+      "duration_secs": 5.4,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Black Fighter expressing his aggressive intent. [duration raised 3.0s \u2192 3.7s: 8 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "BLACK FIGHTER"
+      ],
+      "dialogue": [
+        {
+          "character": "BLACK FIGHTER",
+          "line": "... I'm gonna bust his head wide open!"
+        }
+      ],
+      "spoken_words": 8,
+      "min_speakable_secs": 3.7
+    },
+    {
+      "beat_id": "s2b6",
+      "scene": 2,
+      "beat": 6,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "In Rocky's corner, a shriveled, balding club cornerman unenthusiastically tends to Rocky.",
+      "duration_secs": 4.4,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Visual setup of Rocky's corner and his lackluster cutman. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "CORNERMAN"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b7",
+      "scene": 2,
+      "beat": 7,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "The Cornerman criticizes Rocky's sluggish performance.",
+      "duration_secs": 6.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Cornerman berating Rocky. [duration raised 3.0s \u2192 4.1s: 9 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "CORNERMAN"
+      ],
+      "dialogue": [
+        {
+          "character": "CORNERMAN",
+          "line": "... Ya waltzin' -- Give the suckers some action."
+        }
+      ],
+      "spoken_words": 9,
+      "min_speakable_secs": 4.1
+    },
+    {
+      "beat_id": "s2b8",
+      "scene": 2,
+      "beat": 8,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky tries to interject.",
+      "duration_secs": 2.2,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Rocky attempting to interrupt. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "Hey --"
+        }
+      ],
+      "spoken_words": 2,
+      "min_speakable_secs": 1.3
+    },
+    {
+      "beat_id": "s2b9",
+      "scene": 2,
+      "beat": 9,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "The Cornerman overrides Rocky to offer unsolicited advice.",
+      "duration_secs": 6.6,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Cornerman cutting Rocky off. [duration raised 3.0s \u2192 4.5s: 10 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "CORNERMAN"
+      ],
+      "dialogue": [
+        {
+          "character": "CORNERMAN",
+          "line": "Ya movin' like a bum -- Want some advice --"
+        }
+      ],
+      "spoken_words": 10,
+      "min_speakable_secs": 4.5
+    },
+    {
+      "beat_id": "s2b10",
+      "scene": 2,
+      "beat": 10,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky ignores the advice and just asks for water.",
+      "duration_secs": 3.7,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Rocky making a simple request. [duration raised 2.0s \u2192 2.5s: 5 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "... Just gimme the water."
+        }
+      ],
+      "spoken_words": 5,
+      "min_speakable_secs": 2.5
+    },
+    {
+      "beat_id": "s2b11",
+      "scene": 2,
+      "beat": 11,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "An older fight fan wearing sunglasses rushes up to Rocky's corner to ask about betting.",
+      "duration_secs": 8.4,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for the Fight Fan invading Rocky's space. [duration raised 3.5s \u2192 5.7s: 13 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "FAN"
+      ],
+      "dialogue": [
+        {
+          "character": "FAN",
+          "line": "Should I bet the fight don't go the distance -- Ya feel strong?"
+        }
+      ],
+      "spoken_words": 13,
+      "min_speakable_secs": 5.7
+    },
+    {
+      "beat_id": "s2b12",
+      "scene": 2,
+      "beat": 12,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky responds concisely to the fan.",
+      "duration_secs": 2.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Rocky reassuring the fan. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "Absolutely."
+        }
+      ],
+      "spoken_words": 1,
+      "min_speakable_secs": 0.9
+    },
+    {
+      "beat_id": "s2b13",
+      "scene": 2,
+      "beat": 13,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "The Cornerman persists in offering advice.",
+      "duration_secs": 4.3,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Cornerman pressing Rocky. [duration raised 2.0s \u2192 2.9s: 6 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "CORNERMAN"
+      ],
+      "dialogue": [
+        {
+          "character": "CORNERMAN",
+          "line": "... Ya want some good advice?"
+        }
+      ],
+      "spoken_words": 6,
+      "min_speakable_secs": 2.9
+    },
+    {
+      "beat_id": "s2b14",
+      "scene": 2,
+      "beat": 14,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky dismisses the advice and asks only for his mouthpiece.",
+      "duration_secs": 4.3,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Rocky focusing on the fight. [duration raised 2.0s \u2192 2.9s: 6 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "... I just want the mouthpiece."
+        }
+      ],
+      "spoken_words": 6,
+      "min_speakable_secs": 2.9
+    },
+    {
+      "beat_id": "s2b15",
+      "scene": 2,
+      "beat": 15,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "The bell rings. Rocky crosses himself as the round starts. The opponent intentionally headbutts Rocky, cutting his eye.",
+      "duration_secs": 7.3,
+      "duration_source": "page_budget",
+      "motion_candidate": true,
+      "reason": "High-intensity fight action involving a intentional foul that injures Rocky. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "BLACK FIGHTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b16",
+      "scene": 2,
+      "beat": 16,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "Enraged by the foul, Rocky unleashes a body flurry and slams his opponent on the jaw, knocking him out cold.",
+      "duration_secs": 7.3,
+      "duration_source": "page_budget",
+      "motion_candidate": true,
+      "reason": "Climactic action beat showing Rocky's knockout retaliation. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "BLACK FIGHTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b17",
+      "scene": 2,
+      "beat": 17,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "Rubbish hits the ring while the referee drags the unconscious fighter out. Rocky puts on his robe reading 'The Italian Stallion'.",
+      "duration_secs": 8.8,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Post-knockout chaos in the ring and Rocky donning his character robe. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s2b18",
+      "scene": 2,
+      "beat": 18,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "dialogue",
+      "content": "The arena announcer calls the outcome over the PA.",
+      "duration_secs": 7.2,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Speaker turn for Announcer declaring victory. [duration raised 4.0s \u2192 4.9s: 11 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ANNOUNCER"
+      ],
+      "dialogue": [
+        {
+          "character": "ANNOUNCER",
+          "line": "Winner, Rocky Balboa -- Next a six rounder between local lightweights."
+        }
+      ],
+      "spoken_words": 11,
+      "min_speakable_secs": 4.9
+    },
+    {
+      "beat_id": "s2b19",
+      "scene": 2,
+      "beat": 19,
+      "scene_heading": "INT. BOXING CLUB - NIGHT",
+      "type": "action",
+      "content": "Rocky bums a cigarette, watches his opponent being stretchered away, and exits into the dark rear of the club as the next fight bell rings.",
+      "duration_secs": 10.3,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Closing action beat resolving the scene as Rocky fades into the darkness. [scene fitted to 115.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s3b1",
+      "scene": 3,
+      "beat": 1,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "establishing",
+      "content": "Rocky has nearly completed dressing and reaches into his locker for his hat in a dingy room crowded with ten other fighters.",
+      "duration_secs": 4.7,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing beat introducing the crowded, grim dressing room environment while Rocky finishes dressing. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s3b2",
+      "scene": 3,
+      "beat": 2,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "dialogue",
+      "content": "In the corner, Fighter #1 talks shop with Fighter #2 while taped up.",
+      "duration_secs": 7.7,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "First line of dialogue exchange between two background fighters. [duration raised 4.5s \u2192 6.5s: 15 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "FIGHTER #1"
+      ],
+      "dialogue": [
+        {
+          "character": "FIGHTER #1",
+          "line": "... Tomorrow me an' my woman are gonna tip on down to Atlantic City, man."
+        }
+      ],
+      "spoken_words": 15,
+      "min_speakable_secs": 6.5
+    },
+    {
+      "beat_id": "s3b3",
+      "scene": 3,
+      "beat": 3,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "dialogue",
+      "content": "Fighter #2 responds casually to Fighter #1.",
+      "duration_secs": 3.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Shot/reverse shot cut to Fighter #2 replying about the weather. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "FIGHTER #2"
+      ],
+      "dialogue": [
+        {
+          "character": "FIGHTER #2",
+          "line": "... It's cold, Bro'."
+        }
+      ],
+      "spoken_words": 4,
+      "min_speakable_secs": 2.1
+    },
+    {
+      "beat_id": "s3b4",
+      "scene": 3,
+      "beat": 4,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "dialogue",
+      "content": "Fighter #1 replies back, unfazed by the cold weather.",
+      "duration_secs": 4.8,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Cut back to Fighter #1 concluding his thought about Atlantic City. [duration raised 3.0s \u2192 4.1s: 9 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "FIGHTER #1"
+      ],
+      "dialogue": [
+        {
+          "character": "FIGHTER #1",
+          "line": "... That's right, I got the city to myself..."
+        }
+      ],
+      "spoken_words": 9,
+      "min_speakable_secs": 4.1
+    },
+    {
+      "beat_id": "s3b5",
+      "scene": 3,
+      "beat": 5,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "action",
+      "content": "Other fighters pace nervously, shadowbox, spit on the floor, listen to a loud radio, and smoke in the cloudy room.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Atmospheric action beat showing the chaotic activities of various boxers in the locker room. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s3b6",
+      "scene": 3,
+      "beat": 6,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "action",
+      "content": "A short, fifty-year-old promoter dressed in a sweater over a t-shirt enters the dressing room.",
+      "duration_secs": 3.5,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Physical entry of a new character into the scene. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "PROMOTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s3b7",
+      "scene": 3,
+      "beat": 7,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "dialogue",
+      "content": "The promoter calls out across the cloudy room for Rocky.",
+      "duration_secs": 3.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Promoter's vocal callout to locate Rocky Balboa. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "PROMOTER"
+      ],
+      "dialogue": [
+        {
+          "character": "PROMOTER",
+          "line": "...Balboa!?"
+        }
+      ],
+      "spoken_words": 1,
+      "min_speakable_secs": 0.9
+    },
+    {
+      "beat_id": "s3b8",
+      "scene": 3,
+      "beat": 8,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "action",
+      "content": "Rocky raises his head upon hearing his name, and the promoter walks over to him.",
+      "duration_secs": 3.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Reaction from Rocky and physical movement of the promoter bridging to their exchange. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "PROMOTER"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s3b9",
+      "scene": 3,
+      "beat": 9,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "dialogue",
+      "content": "The promoter itemizes Rocky's fight earnings and deductions.",
+      "duration_secs": 12.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Single speaker turn delivering a long financial breakdown line. [duration raised 6.5s \u2192 10.9s: 26 spoken words across 1 line(s) cannot be delivered in less at 2.5 words/sec] [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "PROMOTER"
+      ],
+      "dialogue": [
+        {
+          "character": "PROMOTER",
+          "line": "... Twenty bucks for the locker an' cornerman -- Two bucks for the towel an' shower, seven for tax -- The house owes ya, sixty-one dollars."
+        }
+      ],
+      "spoken_words": 26,
+      "min_speakable_secs": 10.9
+    },
+    {
+      "beat_id": "s3b10",
+      "scene": 3,
+      "beat": 10,
+      "scene_heading": "INT. DRESSING ROOM - NIGHT",
+      "type": "action",
+      "content": "The promoter peels off cash and leaves. Rocky closes his locker, nods to his defeated opponent, and exits.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Concluding physical actions ending the dressing room scene as Rocky departs. [scene fitted to 54.4s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "PROMOTER",
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s4b1",
+      "scene": 4,
+      "beat": 1,
+      "scene_heading": "INT. TROLLEY - NIGHT",
+      "type": "establishing",
+      "content": "The empty trolley rattles through the night toward South Philly, carrying only Rocky and a thin old black woman.",
+      "duration_secs": 6.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing shot defining the mood, setting, and sparse occupancy of the trolley. [scene fitted to 22.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "WOMAN"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s4b2",
+      "scene": 4,
+      "beat": 2,
+      "scene_heading": "INT. TROLLEY - NIGHT",
+      "type": "action",
+      "content": "The old woman intently studies Rocky's battered face, making Rocky visibly self-conscious under her gaze.",
+      "duration_secs": 6.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Non-verbal interaction creating tension through the woman's prolonged stare. [scene fitted to 22.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY",
+        "WOMAN"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s4b3",
+      "scene": 4,
+      "beat": 3,
+      "scene_heading": "INT. TROLLEY - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky breaks the silence, speaking apologetically to justify his bruises.",
+      "duration_secs": 5.1,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Dialogue beat covering Rocky's speaker turn. [scene fitted to 22.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "I'm a fighter."
+        }
+      ],
+      "spoken_words": 3,
+      "min_speakable_secs": 1.7
+    },
+    {
+      "beat_id": "s4b4",
+      "scene": 4,
+      "beat": 4,
+      "scene_heading": "INT. TROLLEY - NIGHT",
+      "type": "dialogue",
+      "content": "The woman gives a tired, unyielding retort.",
+      "duration_secs": 5.1,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Dialogue beat covering the Woman's speaker turn response. [scene fitted to 22.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "WOMAN"
+      ],
+      "dialogue": [
+        {
+          "character": "WOMAN",
+          "line": "... Yo' iz an accident."
+        }
+      ],
+      "spoken_words": 5,
+      "min_speakable_secs": 2.5
+    },
+    {
+      "beat_id": "s5b1",
+      "scene": 5,
+      "beat": 1,
+      "scene_heading": "EXT. STREET - NIGHT",
+      "type": "establishing",
+      "content": "Rocky exits the trolley and begins walking down the block.",
+      "duration_secs": 2.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing shot of Rocky stepping off the trolley onto the street at night. [scene fitted to 15.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s5b2",
+      "scene": 5,
+      "beat": 2,
+      "scene_heading": "EXT. STREET - NIGHT",
+      "type": "action",
+      "content": "Rocky waves at a pair of high-heeled hookers as he passes, and they wave back at him.",
+      "duration_secs": 2.5,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Brief social interaction showing Rocky's familiarity with the neighborhood. [scene fitted to 15.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s5b3",
+      "scene": 5,
+      "beat": 3,
+      "scene_heading": "EXT. STREET - NIGHT",
+      "type": "action",
+      "content": "Rocky encounters a sleeping wino in front of a dirty bookstore and drags him into a sheltered passageway.",
+      "duration_secs": 4.4,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Physical action showing Rocky caring for a homeless person. [scene fitted to 15.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s5b4",
+      "scene": 5,
+      "beat": 4,
+      "scene_heading": "EXT. STREET - NIGHT",
+      "type": "action",
+      "content": "Rocky pauses outside the Animal Town Pet Shop and peers through the window at a sad, large dog.",
+      "duration_secs": 3.3,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Moment of quiet connection between Rocky and the dog in the pet shop. [scene fitted to 15.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s5b5",
+      "scene": 5,
+      "beat": 5,
+      "scene_heading": "EXT. STREET - NIGHT",
+      "type": "action",
+      "content": "Rocky mumbles softly to the dog and continues walking toward the street corner.",
+      "duration_secs": 2.5,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Resolution of the pet shop beat as Rocky resumes walking. [scene fitted to 15.6s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s6b1",
+      "scene": 6,
+      "beat": 1,
+      "scene_heading": "EXT. ROCKY'S APARTMENT - NIGHT",
+      "type": "establishing",
+      "content": "A short while later, Rocky approaches his apartment located in a deprived section of South Philly.",
+      "duration_secs": 4.2,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishes the rundown location and atmosphere of Rocky's South Philly neighborhood as he arrives home. [scene fitted to 7.8s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s6b2",
+      "scene": 6,
+      "beat": 2,
+      "scene_heading": "EXT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "Rocky kicks away litter gathered against the apartment steps and enters the building.",
+      "duration_secs": 3.6,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Specific physical action showing Rocky clearing trash from his doorstep before going inside. [scene fitted to 7.8s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s7b1",
+      "scene": 7,
+      "beat": 1,
+      "scene_heading": "INT. ROCKY'S HALLWAY - NIGHT",
+      "type": "establishing",
+      "content": "The narrow hallway is painted olive brown. A single light bulb illuminates the gloomy corridor.",
+      "duration_secs": 5.6,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing shot setting the visual atmosphere and mood of Rocky's gloomy hallway. [scene fitted to 5.6s from script page geometry at 54 lines/60s]",
+      "characters": [],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b1",
+      "scene": 8,
+      "beat": 1,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "establishing",
+      "content": "Rocky enters his drab one-room apartment, revealed with a curling Rocky Marciano poster and a torn mattress nailed to the wall as a punching bag.",
+      "duration_secs": 4.5,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Establishing beat introducing Rocky's living conditions and boxing background. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b2",
+      "scene": 8,
+      "beat": 2,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "Rocky drops his coat on the floor, puts on his glasses, walks over to the small turtle bowl, and gently lifts his pets.",
+      "duration_secs": 5.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Action beat showing Rocky's affectionate domestic routine with his turtles. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b3",
+      "scene": 8,
+      "beat": 3,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "dialogue",
+      "content": "Rocky speaks softly to his turtles as he holds them up.",
+      "duration_secs": 3.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Dialogue beat with single line delivered to his pets. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [
+        {
+          "character": "ROCKY",
+          "line": "...Look who's home."
+        }
+      ],
+      "spoken_words": 3,
+      "min_speakable_secs": 1.7
+    },
+    {
+      "beat_id": "s8b4",
+      "scene": 8,
+      "beat": 4,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "Rocky sets a pan of water to boil on his hot plate, then puts an old 45 RPM record of 'ALL IN THE GAME' on a battered phonograph.",
+      "duration_secs": 5.9,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Sequential action setting up the environment and mood with music. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b5",
+      "scene": 8,
+      "beat": 5,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "As crackling music starts playing, Rocky picks up his hairbrush like a microphone and mimes crooning to thousands of adoring fans.",
+      "duration_secs": 5.4,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Character action revealing Rocky's internal fantasy and playful nature. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b6",
+      "scene": 8,
+      "beat": 6,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "Rocky shifts abruptly from singing into a bullish fighting stance and throws a rapid series of punches.",
+      "duration_secs": 3.5,
+      "duration_source": "page_budget",
+      "motion_candidate": true,
+      "reason": "High-intensity physical movement transitioning from playfulness to boxing instincts. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    },
+    {
+      "beat_id": "s8b7",
+      "scene": 8,
+      "beat": 7,
+      "scene_heading": "INT. ROCKY'S APARTMENT - NIGHT",
+      "type": "action",
+      "content": "The water reaches a boil, and Rocky immerses his badly-swollen hands into the hot water for relief.",
+      "duration_secs": 5.0,
+      "duration_source": "page_budget",
+      "motion_candidate": false,
+      "reason": "Concluding action beat highlighting the physical damage from his fight. [scene fitted to 32.2s from script page geometry at 54 lines/60s]",
+      "characters": [
+        "ROCKY"
+      ],
+      "dialogue": [],
+      "spoken_words": 0,
+      "min_speakable_secs": 0.0
+    }
+  ]
+}

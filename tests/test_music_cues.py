@@ -21,9 +21,10 @@ from animatic.core.music_cues import (
     find_music_cues,
     strip_named_works,
 )
+from corpus import beats_path
 
 PDF = Path("docs/rocky-1976.pdf")
-BEATS_JSON = Path("output/beats.json")
+BEATS_JSON = beats_path()
 
 pytestmark = pytest.mark.skipif(
     not (PDF.exists() and BEATS_JSON.exists()),

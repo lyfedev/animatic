@@ -24,10 +24,11 @@ from animatic.core.panel_generator import (
     resolve_beat_slots,
 )
 from animatic.core.slot_resolver import Slot, resolve_slots
+from corpus import beats_path, manifest_path
 
 PDF_PATH = Path("docs/rocky-1976.pdf")
-BEATS_PATH = Path("output/beats.json")
-MANIFEST_PATH = Path("output/assets/manifest.json")
+BEATS_PATH = beats_path()
+MANIFEST_PATH = manifest_path()
 
 
 def _mock_image_response(data: bytes = b"fake-panel-bytes", mime_type: str = "image/png"):

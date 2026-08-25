@@ -63,11 +63,22 @@ class MissingShotError(Exception):
 
 def resolve_shot(
     beat_id: str,
-    footage_dir: Path = FOOTAGE_DIR,
-    motion_dir: Path = MOTION_DIR,
-    panel_dir: Path = PANEL_DIR,
+    footage_dir: Path | None = None,
+    motion_dir: Path | None = None,
+    panel_dir: Path | None = None,
 ) -> ShotSource:
-    """The highest-priority picture that exists for `beat_id`."""
+    """The highest-priority picture that exists for `beat_id`.
+
+    Directories default to None and resolve to the module constants at CALL
+    time, not at definition time. Binding them as default arguments captured
+    the values once at import, so patching `PANEL_DIR` did nothing — a test
+    doing exactly that passed locally purely because the real `output/panels/`
+    happened to exist, and failed in CI where it does not.
+    """
+    footage_dir = FOOTAGE_DIR if footage_dir is None else footage_dir
+    motion_dir = MOTION_DIR if motion_dir is None else motion_dir
+    panel_dir = PANEL_DIR if panel_dir is None else panel_dir
+
     footage = _find_footage(beat_id, footage_dir)
     if footage:
         return ShotSource(
@@ -95,8 +106,9 @@ def resolve_shot(
     )
 
 
-def footage_beat_ids(footage_dir: Path = FOOTAGE_DIR) -> set[str]:
+def footage_beat_ids(footage_dir: Path | None = None) -> set[str]:
     """Beat ids that have real footage, read from filenames."""
+    footage_dir = FOOTAGE_DIR if footage_dir is None else footage_dir
     if not footage_dir.is_dir():
         return set()
     found = set()

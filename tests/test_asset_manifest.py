@@ -24,9 +24,10 @@ from animatic.core.asset_manifest import build_manifest, write_manifest, write_s
 from animatic.core.reference_art import content_hash_file, resolve_reference_art
 from animatic.core.slot_resolver import Slot, resolve_slots
 from animatic.core.style import build_slot_prompt
+from corpus import beats_path
 
 PDF_PATH = Path("docs/rocky-1976.pdf")
-BEATS_PATH = Path("output/beats.json")
+BEATS_PATH = beats_path()
 REFERENCE_DIR = Path("assets/reference-art")
 
 
