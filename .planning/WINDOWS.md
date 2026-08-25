@@ -137,3 +137,26 @@ last_updated: 2026-08-25T08:13:11.083Z
   }
 ]
 ````
+
+
+## Phase 4 D-09 gate — ACCEPT-WITH-NOTE (2026-08-25)
+
+Developer reviewed all 19 scene-2 panels at the blocking-human gate and chose
+**accept-with-note**: generate the remaining 30 beats, carry these forward as known
+defects, and revisit only if they hurt the assembled cut in Phase 7. The two-pass
+revision ceiling was already spent and was not extended.
+
+Rationale recorded at the gate: the scene reads as an editable fight with real coverage;
+four defects across nineteen panels are better judged moving in a timed cut than as
+stills; Phase 7 (first watchable animatic) is the milestone to protect.
+
+| # | Beat | Defect | Severity |
+|---|------|--------|----------|
+| 6 | `s2b3` | ~15 crowd figures with fully rendered faces. Survived both revision passes. The blank-face rule holds for principals but not for background crowds. | medium |
+| 7 | `s2b9`, `s2b5` | Two-figure close-ups still draw eyes; single-character close-ups are clean. The clause is less reliable with two heads in frame. | medium |
+| 10 | `s2b12` | Panel is a solid black fill — reads as a photographic negative against the line-art of every other panel. Tonally the most jarring of the set. | medium |
+| 11 | `s2b16` | Cartoon impact stars on the knockout. Tonally off for this film. | low |
+
+**Re-evaluate at Phase 7**, in the assembled cut, not as stills. If any of these read badly
+in motion, `scripts/build_panels.py --force --only <beat_id>` regenerates one panel without
+disturbing the rest, and the cache leaves every other panel untouched.
