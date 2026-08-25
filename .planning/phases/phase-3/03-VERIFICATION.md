@@ -1,11 +1,31 @@
 ---
 phase: phase-3
 verified: 2026-08-25T02:15:00Z
-status: gaps_found
-score: 6/7 must-haves verified
+status: passed
+score: 7/7 must-haves verified (1 by override)
 behavior_unverified: 0
-overrides_applied: 0
-gaps:
+overrides_applied: 1
+revised: 2026-08-25T11:12:08Z
+overrides:
+  - must_have: "Supplied reference art is ingested and takes priority over generated art"
+    reason: >-
+      The mechanism is built, real and covered by unmocked filesystem tests
+      (`test_slot_directory_designates_reference_art`,
+      `test_slot_directory_beats_filename_token`); what is missing is a human
+      designation, which is a curation act, not code. The developer has twice
+      declined to make it: "i didn't ID the rocky pick for reference, you grabbed
+      it from an unsorted folder" (2026-08-24) and "let's wait on use of reference
+      images" (2026-08-24). Adopting a loose file without that designation is the
+      exact defect commit 5f581e0 exists to prevent — it silently promoted a
+      halftone photograph into a cut that is otherwise flat black line art. Held
+      deliberately unexercised; reversible at any time by moving a file into
+      `assets/reference-art/<slot_id>/` and re-running `scripts/build_assets.py`,
+      which flips the slot to `reference_backed` with no code change. Tracked as
+      backlog S-01 (slot inspector), whose natural home is Phase 9.
+    accepted_by: "dave"
+    accepted_at: "2026-08-25T11:12:08Z"
+gaps: []
+overridden_gaps:
   - truth: "Supplied reference art is ingested and takes priority over generated art (ROADMAP criterion 3)"
     status: failed
     reason: >-
@@ -53,13 +73,13 @@ treated here only as a map of what to check, not as evidence in themselves.
 |---|-------|--------|----------|
 | 1 | Running with zero reference art produces a complete manifest with every slot filled by generated temp art (ROADMAP criterion 1) | ✓ VERIFIED | Live `output/assets/manifest.json`: `total_slots: 16`, `generated: 16`, `reference_backed: 0`, every slot has a non-empty `art_uri` pointing at a real file on disk (all 13 files present, sha256 `content_hash` in the manifest matches the real file bytes for all 16 entries, independently recomputed). `tests/test_asset_manifest.py::test_manifest_complete_with_no_reference_art` also exercises this with reference art absent. |
 | 2 | Every character and location in the beat list resolves to exactly one slot (ROADMAP criterion 2) | ✓ VERIFIED | Independently recomputed from `output/beats.json` + `docs/rocky-1976.pdf`, not from the manifest: 9 distinct `characters[]` values across 49 beats, 8 raw scene headings across 8 scenes where scene 2 (`INT. BOXING CLUB - NIGHT`) is Gemini-invented text, not a real PDF slug (`pdf_extractor.extract_scenes` confirms scene 2 has no `INT./EXT.` line). Folding scene 2 into scene 1 per D-02 yields 7 distinct locations, matching the manifest's `location_slots: 7` exactly. `EXT. ROCKY'S APARTMENT` (scene 6) and `INT. ROCKY'S APARTMENT` (scene 8) are two separate slots in both the live manifest and the registry code (`slot_resolver._resolve_locations` keeps the `INT.`/`EXT.` token in the normalisation key). 9 + 7 = 16, matching `total_slots: 16`, `character_slots: 9`. No name/heading is missing or double-counted. |
-| 3 | Supplied reference art is ingested and takes priority over generated art (ROADMAP criterion 3) | ✗ FAILED | See `gaps` above. The slot-directory matching mechanism (`reference_art.resolve_reference_art`) is real and tested against real bytes on a real filesystem (`tests/test_asset_manifest.py::test_slot_directory_designates_reference_art`, `test_slot_directory_beats_filename_token` — both build actual files under `tmp_path` and call the production function, not a mock). But **no slot in the live system is currently reference-backed** — `reference_backed: 0` in `output/assets/manifest.json`. The project's actual supplied reference photos sit loose and undesignated. Ruling: the mechanism exists and works; the criterion as an observable truth about the shipped system does not currently hold. |
+| 3 | Supplied reference art is ingested and takes priority over generated art (ROADMAP criterion 3) | ⊘ PASSED (override) | Override accepted by dave 2026-08-25 — mechanism built and tested, designation deliberately withheld ("let's wait on use of reference images"); see `overrides` in frontmatter. Original finding retained below. The slot-directory matching mechanism (`reference_art.resolve_reference_art`) is real and tested against real bytes on a real filesystem (`tests/test_asset_manifest.py::test_slot_directory_designates_reference_art`, `test_slot_directory_beats_filename_token` — both build actual files under `tmp_path` and call the production function, not a mock). But **no slot in the live system is currently reference-backed** — `reference_backed: 0` in `output/assets/manifest.json`. The project's actual supplied reference photos sit loose and undesignated. Ruling: the mechanism exists and works; the criterion as an observable truth about the shipped system does not currently hold. |
 | 4 | Replacing a slot file and re-running regenerates the panels that use it (ROADMAP criterion 4) | ✓ VERIFIED (mechanism; scoped) | Independently reproduced against the real production code and real production data (not fixtures): loaded the actual 16 resolved `Slot` objects via `resolve_slots`/`resolve_reference_art`, populated their art fields from the real `output/assets/manifest.json`, then called `asset_manifest.build_manifest` twice — once unchanged (`stale_beat_ids == []`) and once with `int_rockys_hallway`'s content_hash altered to simulate a real file replacement. Result: `stale_beat_ids == ['s7b1']` (exactly `int_rockys_hallway`'s one real beat_id) and `art_changed` True on that slot only — matching 03-03-SUMMARY's independently-unverifiable claim exactly. **Scope note, re-ruling the prior plan-check finding:** no panels exist yet (Phase 4 has not started), so "regenerates the panels" cannot be observed inside Phase 3 by construction — Phase 3's actual, verifiable deliverable is the `content_hash` + per-slot `beat_ids` + `stale_beat_ids` signal Phase 4 is contracted to consume. This is confirmed here as a legitimate, working phase-boundary handoff, not a stub. |
 | 5 | Each manifest entry records slot name, priority, source and reason (ROADMAP criterion 5) | ✓ VERIFIED | All 16 live manifest entries carry non-empty `slot_id`, `priority_rank` + `priority_reason` (restating beats/seconds/share, e.g. `"31 beat(s), 152.3s, 59.6%... rank 1 of 16..."`), `source` (`"generated"` throughout), and `source_reason` (e.g. `"reused existing art at ... — prompt unchanged since the previous manifest"`) — independently checked field-by-field across all 16 entries, none empty. |
 | 6 | Two characters who speak in the same scene are never given the same voice (D-04/D-06) | ✓ VERIFIED | Confirmed from `output/beats.json` directly: `FIGHTER #1` and `FIGHTER #2` both speak in scene 3 (`s3b2`, `s3b3`, `s3b4`). `slot_resolver.assert_no_voice_collisions` is called unconditionally inside `resolve_slots` on every run (not just in tests) and raises `ValueError` on any same-scene voice collision. `tests/test_slot_resolver.py::test_assert_no_voice_collisions_raises_on_a_deliberate_collision` forces a real collision (mutates `fighter_2.voice_id = fighter_1.voice_id`) and confirms it raises — this is a genuine regression test, not a tautology, since `voice_id` is not hard-coded distinct by the test itself. Ran in isolation: passes. |
 | 7 | Google Cloud SDK only for AI — no other AI models/frameworks/APIs (NFR-03) | ✓ VERIFIED | `requirements.txt`: only `google-genai`. `src/animatic/core/asset_generator.py` imports only `from google import genai` / `from google.genai import types`. Repo-wide grep for `openai`, `anthropic`, `langchain`, `cohere`, `mistralai`, `ollama` (source, scripts, requirements, pyproject) returns zero matches. |
 
-**Score:** 6/7 truths verified
+**Score:** 7/7 truths verified (6 verified, 1 passed by override)
 
 ### Required Artifacts
 

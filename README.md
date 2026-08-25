@@ -65,6 +65,14 @@ PYTHONPATH=src python scripts/build_assets.py
 # assets/reference-art/rocky/photo.jpg. Any slot without reference art is
 # filled with generated temp art so the pipeline never blocks on a missing
 # input.
+
+# 8. Generate one black line-art panel per beat
+PYTHONPATH=src python scripts/build_panels.py
+# --scene N generates just that scene's beats. Unchanged beats and
+# unchanged slot art reuse their existing panels with no API call; edit a
+# beat's content, change a beat's shot size, or replace a dependent slot's
+# art and re-run — only the affected panels redraw, and everything else
+# stays cached.
 ```
 
 ## Deploying to AWS

@@ -15,8 +15,8 @@ replacement, and the submission deliverables.
 
 - [x] **Phase 1: Project Scaffold & Infrastructure** - Repo, Python layout, AWS hosting skeleton, CI, health endpoint
 - [x] **Phase 2: Beat Parser** - Rocky PDF to a structured beat list with machine-readable reasons
-- [ ] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
-- [ ] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
+- [x] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
+- [x] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
 - [ ] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
 - [ ] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
 - [ ] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
@@ -97,13 +97,13 @@ Plans:
   4. Each panel records beat_id, asset slots used, prompt and reason
   5. Re-running with unchanged beats and assets reuses cached panels
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans executed
 
 Plans:
 
-- [ ] 04-01-PLAN.md — Tracer one beat end-to-end, then the shot-size and facial-clause spine, the panel cache and failure isolation
-- [ ] 04-02-PLAN.md — Scene 2's 19 panels generated and judged, the close-up clause fixed, and the D-09 gate before the other 30
-- [ ] 04-03-PLAN.md — The remaining 30 panels, the cache proven live on real files, and the Panel Contract for Phases 5-7
+- [x] 04-01-PLAN.md — Tracer one beat end-to-end, then the shot-size and facial-clause spine, the panel cache and failure isolation
+- [x] 04-02-PLAN.md — Scene 2's 19 panels generated and judged, the close-up clause fixed, and the D-09 gate before the other 30 (accept-with-note; no standalone SUMMARY.md — outcome recorded in 04-ART-REVIEW.md and WINDOWS.md)
+- [x] 04-03-PLAN.md — The remaining 30 panels, the cache proven live on real files, and the Panel Contract for Phases 5-7
 
 ### Phase 5: Audio Synthesis
 
@@ -225,8 +225,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Infrastructure | 1/1 | Complete (1 gap: no CDN) | 2026-08-23 |
 | 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
-| 3. Asset Management & Manifest | 3/3 | In Progress|  |
-| 4. Panel Generation | 0/TBD | Not started | - |
+| 3. Asset Management & Manifest | 3/3 | Complete (1 override: reference art held unexercised) | 2026-08-25 |
+| 4. Panel Generation | 3/3 | Complete (1 override: 8 named facial/lettering exceptions) | 2026-08-25 |
 | 5. Audio Synthesis | 0/TBD | Not started | - |
 | 6. Motion Generation | 0/TBD | Not started | - |
 | 7. Video Assembly | 0/TBD | Not started | - |
@@ -270,6 +270,7 @@ change a character or a room, there is no reason to build an interface for it.
     the model reads is "one lone figure on a blank page", not a room. Those attempts were
     also polluted by the hat defect below, which was perturbing every generation while the
     context wording was being judged.
+
   - **Feeds from reference-art candidates:** loose files are now offered rather than
     adopted (see below), and this inspector is where a human designates them. Half-built already: slot
   replacement, `content_hash` and `stale_beat_ids` exist (FR-02). Missing is the UI and a
