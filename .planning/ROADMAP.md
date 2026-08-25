@@ -97,11 +97,13 @@ Plans:
   4. Each panel records beat_id, asset slots used, prompt and reason
   5. Re-running with unchanged beats and assets reuses cached panels
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 04-01: TBD (set during planning)
+- [ ] 04-01-PLAN.md — Tracer one beat end-to-end, then the shot-size and facial-clause spine, the panel cache and failure isolation
+- [ ] 04-02-PLAN.md — Scene 2's 19 panels generated and judged, the close-up clause fixed, and the D-09 gate before the other 30
+- [ ] 04-03-PLAN.md — The remaining 30 panels, the cache proven live on real files, and the Panel Contract for Phases 5-7
 
 ### Phase 5: Audio Synthesis
 
