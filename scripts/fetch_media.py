@@ -60,9 +60,11 @@ def main() -> None:
     args = parser.parse_args()
 
     prefixes = tuple(args.prefix) if args.prefix else DEFAULT_PREFIXES
-    client = _client()
+    client = _client(args.bucket)
     if client is None:
-        sys.exit("no AWS credentials available — cannot fetch media")
+        # The container tolerates this (`|| true` in CMD) and degrades to an
+        # honest 503; a developer running it by hand should see a failure.
+        sys.exit(f"cannot fetch media from s3://{args.bucket}")
 
     fetched = skipped = 0
     for prefix in prefixes:
@@ -88,17 +90,26 @@ def main() -> None:
         )
 
 
-def _client():
+def _client(bucket: str):
+    """An S3 client, checked against THIS bucket rather than the account.
+
+    The first version probed with `list_buckets()`, which needs account-wide
+    `s3:ListAllMyBuckets`. The ECS task role is scoped to one bucket — exactly
+    as it should be — so the probe failed, the script reported "no credentials",
+    and the container served a demo with no media behind it. A permission check
+    must ask for the permission the code actually needs.
+    """
     try:
         session = boto3.Session(profile_name="newaccount")
-    except Exception:  # noqa: BLE001 — no profile in a container; that is normal
+    except Exception:  # noqa: BLE001 — no named profile in a container
         session = boto3.Session()
+
+    client = session.client("s3", region_name=settings.aws_region)
     try:
-        client = session.client("s3", region_name=settings.aws_region)
-        client.list_buckets()
+        client.head_bucket(Bucket=bucket)
         return client
     except (NoCredentialsError, ClientError, BotoCoreError) as exc:
-        print(f"S3 unavailable: {exc}", file=sys.stderr)
+        print(f"cannot reach s3://{bucket}: {exc}", file=sys.stderr)
         return None
 
 
