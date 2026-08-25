@@ -297,9 +297,17 @@ change a character or a room, there is no reason to build an interface for it.
     durations, since re-timing an approved beat invalidates both.
 
 - **S-03 Model sheet conditioning** — supply a reference sheet to drive character
-  consistency. **Technical risk:** 03-RESEARCH.md flags multi-image reference conditioning
-  as UNVERIFIED for `gemini-3.1-flash-image`, and NFR-03 forbids reaching for another
-  provider. Spike before planning.
+  consistency. **RISK CLEARED 2026-08-24.** Multi-image reference conditioning is
+  ACCEPTED by `gemini-3.1-flash-image`: feeding the `black_fighter` character plate and
+  the `int_blue_door_fight_club` location plate plus a prompt returned one composed panel
+  carrying the character's build and clothing and the room's ring, benches, chairs and
+  fittings. Evidence: `output/experiments/refcond_panel.jpg`.
+  **This validates the Phase 3 asset architecture** — characters isolated on white and
+  locations with no people are a vocabulary that genuinely combines, not two disconnected
+  outputs. Phase 4 should generate each panel by conditioning on the slot plates its beat
+  uses, rather than regenerating from text and discarding the assets.
+  Note: the spike panel has facial features, so Phase 4 still owns applying PROJECT.md's
+  shot-size rule (none in wide/medium, brow/mouth/nose in close-ups) at panel level.
 
 - **S-04 Video splice replacing beats** — already scoped as Phase 8 (FR-07/FR-08). Listed
   here only to close the loop on the same idea set.

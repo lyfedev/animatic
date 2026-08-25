@@ -211,18 +211,26 @@ def _subject_note(
     rule is stated positively as a blank head rather than a negation.
     """
     if slot.slot_type == "location":
+        # The description is drawn from beats, and beats describe PEOPLE doing
+        # things — this room's own beats name Rocky four times and have him
+        # entering, dropping his coat and lifting his turtles, so the model
+        # drew him. Two rules, both learned the hard way on the character
+        # prompts: state emptiness positively rather than as "no people", and
+        # put it LAST so it is the final thing the prompt says.
         description = describe_slot(slot, beats)
         return (
-            f"An empty establishing view of the physical space itself — "
-            f"the architecture, fixtures and props implied by "
-            f"{description} — with no people present anywhere in the "
-            f"shot. Every door, wall, poster board and nameplate in the "
-            f"room is left a plain blank shape, exactly as bare as the "
-            f"rest of the linework, carrying no lettering of its own — "
-            f"nothing in the picture is captioned, labeled or "
-            f"hand-painted with this location's own name or any other "
-            f"word."
+            f"The room itself: the architecture, fixtures and props implied "
+            f"by {description}. Everything built into the room stays — the "
+            f"walls, floor, furniture, fittings and every object that lives "
+            f"there. Every door, wall, poster board and nameplate is a plain "
+            f"blank shape, exactly as bare as the rest of the linework, "
+            f"carrying no lettering of its own. This is the room photographed "
+            f"between takes, standing quiet and unoccupied, its stillness the "
+            f"whole subject of the picture — the furniture and fittings are "
+            f"the only things in the frame, and the floor is clear and open "
+            f"from wall to wall."
         )
+
     # A bare name is ambiguous about the film rather than the word: "BLACK
     # FIGHTER" drew a soldier in a beret and tactical vest. character_context
     # supplies the world from the locations of the character's own scenes.
