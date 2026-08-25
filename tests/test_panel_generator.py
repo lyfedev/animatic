@@ -23,7 +23,7 @@ from animatic.core.panel_generator import (
     panel_cache_key,
     resolve_beat_slots,
 )
-from animatic.core.slot_resolver import resolve_slots
+from animatic.core.slot_resolver import Slot, resolve_slots
 
 PDF_PATH = Path("docs/rocky-1976.pdf")
 BEATS_PATH = Path("output/beats.json")
@@ -232,3 +232,294 @@ def test_panel_cache_key_is_deterministic_and_sensitive_to_inputs():
     beat_changed = {**beat, "content": "y"}
     key_diff_content = panel_cache_key(beat_changed, "close-up", dependent, "v1")
     assert key_diff_content != key1
+
+
+# ---------------------------------------------------------------------------
+# generate_missing_panels — cache reuse, failure isolation, the whole-index
+# rule (Task 3, ROADMAP criteria 4 and 5, NFR-04)
+# ---------------------------------------------------------------------------
+
+def _synthetic_fixture():
+    """Two beats, two locations, two characters — small enough to make
+    targeted cache-invalidation assertions without the real 49-beat corpus."""
+    beat_a = {
+        "beat_id": "s1b1", "scene": 1, "beat": 1, "type": "dialogue",
+        "content": "Alice speaks her line.", "duration_secs": 3.0,
+        "characters": ["ALICE"], "dialogue": [],
+    }
+    beat_b = {
+        "beat_id": "s2b1", "scene": 2, "beat": 1, "type": "dialogue",
+        "content": "Bob speaks his line.", "duration_secs": 3.0,
+        "characters": ["BOB"], "dialogue": [],
+    }
+    beats_doc = {"generated_at": "2026-08-24T00:00:00Z", "beats": [beat_a, beat_b]}
+
+    loc1 = Slot(slot_id="loc1", slot_type="location", display_name="LOC1")
+    loc1.source_scenes = [1]
+    loc2 = Slot(slot_id="loc2", slot_type="location", display_name="LOC2")
+    loc2.source_scenes = [2]
+    alice = Slot(slot_id="alice", slot_type="character", display_name="ALICE")
+    bob = Slot(slot_id="bob", slot_type="character", display_name="BOB")
+    slots = [loc1, loc2, alice, bob]
+
+    manifest = {
+        "generated_at": "2026-08-25T00:00:00Z",
+        "slots": [
+            {"slot_id": "loc1", "content_hash": "hash_loc1"},
+            {"slot_id": "loc2", "content_hash": "hash_loc2"},
+            {"slot_id": "alice", "content_hash": "hash_alice"},
+            {"slot_id": "bob", "content_hash": "hash_bob"},
+        ],
+    }
+    return beats_doc, slots, manifest
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_unchanged_rerun_makes_zero_calls_and_marks_every_panel_reused(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    first_index = generate_missing_panels(beats_doc, slots, manifest)
+    assert mock_client.models.generate_content.call_count == 2
+
+    second_index = generate_missing_panels(beats_doc, slots, manifest, previous_index=first_index)
+
+    assert mock_client.models.generate_content.call_count == 2, "no new calls on an unchanged rerun"
+    assert all(p["source"] == "reused" for p in second_index["panels"])
+    assert second_index["reused_count"] == 2
+    assert second_index["generated_count"] == 0
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_slot_content_hash_change_invalidates_only_dependent_beats(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    first_index = generate_missing_panels(beats_doc, slots, manifest)
+    assert mock_client.models.generate_content.call_count == 2
+
+    manifest2 = json.loads(json.dumps(manifest))
+    for s in manifest2["slots"]:
+        if s["slot_id"] == "bob":
+            s["content_hash"] = "hash_bob_changed"
+
+    second_index = generate_missing_panels(beats_doc, slots, manifest2, previous_index=first_index)
+
+    assert mock_client.models.generate_content.call_count == 3, "only bob's dependent beat regenerates"
+    by_id = {p["beat_id"]: p for p in second_index["panels"]}
+    assert by_id["s2b1"]["source"] == "generated"
+    assert by_id["s1b1"]["source"] == "reused"
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_prompt_template_version_bump_invalidates_every_panel(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    first_index = generate_missing_panels(beats_doc, slots, manifest)
+    assert mock_client.models.generate_content.call_count == 2
+
+    # Prove caching is actually engaged before defeating it with a version bump.
+    unchanged_index = generate_missing_panels(beats_doc, slots, manifest, previous_index=first_index)
+    assert mock_client.models.generate_content.call_count == 2
+
+    monkeypatch.setattr("animatic.core.panel_generator.PROMPT_TEMPLATE_VERSION", "v2-test")
+    bumped_index = generate_missing_panels(beats_doc, slots, manifest, previous_index=unchanged_index)
+
+    assert mock_client.models.generate_content.call_count == 4, "a template version bump redraws everything"
+    assert all(p["source"] == "generated" for p in bumped_index["panels"])
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_editing_a_beat_content_invalidates_only_that_beat(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    first_index = generate_missing_panels(beats_doc, slots, manifest)
+    assert mock_client.models.generate_content.call_count == 2
+
+    beats_doc2 = json.loads(json.dumps(beats_doc))
+    beats_doc2["beats"][0]["content"] = "Alice says something completely different now."
+
+    second_index = generate_missing_panels(beats_doc2, slots, manifest, previous_index=first_index)
+
+    assert mock_client.models.generate_content.call_count == 3, "only the edited beat regenerates"
+    by_id = {p["beat_id"]: p for p in second_index["panels"]}
+    assert by_id["s1b1"]["source"] == "generated"
+    assert by_id["s2b1"]["source"] == "reused"
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+@patch("animatic.core.panel_generator.time.sleep")
+def test_a_call_that_fails_twice_records_generation_failed_and_the_loop_continues(
+    mock_sleep, mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    call_count = {"n": 0}
+
+    def side_effect(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] <= 2:
+            raise RuntimeError("simulated API failure")
+        return _mock_image_response()
+
+    mock_client.models.generate_content.side_effect = side_effect
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    index = generate_missing_panels(beats_doc, slots, manifest)
+
+    # s1b1 is processed first and fails on both attempts (calls 1, 2);
+    # s2b1 is processed next and succeeds on its first attempt (call 3).
+    by_id = {p["beat_id"]: p for p in index["panels"]}
+    assert by_id["s1b1"]["source"] == "generation_failed"
+    assert "RuntimeError" in by_id["s1b1"]["source_reason"]
+    assert "simulated API failure" in by_id["s1b1"]["source_reason"]
+    assert by_id["s2b1"]["source"] == "generated"
+    assert mock_sleep.called
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+@patch("animatic.core.panel_generator.time.sleep")
+def test_a_call_that_fails_once_then_succeeds_on_retry_produces_a_panel(
+    mock_sleep, mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    beats_doc, slots, manifest = _synthetic_fixture()
+    # Only test the first beat to keep the retry count unambiguous.
+    beats_doc = {**beats_doc, "beats": [beats_doc["beats"][0]]}
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    call_count = {"n": 0}
+
+    def side_effect(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            raise RuntimeError("transient failure")
+        return _mock_image_response()
+
+    mock_client.models.generate_content.side_effect = side_effect
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    index = generate_missing_panels(beats_doc, slots, manifest)
+
+    entry = index["panels"][0]
+    assert entry["source"] == "generated", "the retry succeeded, this must not be a failure record"
+    assert entry["beat_id"] == "s1b1"
+    assert Path(entry["panel_uri"]).exists()
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_only_restricted_run_still_writes_an_entry_for_every_beat(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """--only narrows what is GENERATED, never what is written to the index
+    — the whole-index rule (mirrors asset_generator's --only regression)."""
+    beats_doc, slots, manifest = _synthetic_fixture()
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    first_index = generate_missing_panels(beats_doc, slots, manifest)
+    assert len(first_index["panels"]) == 2
+
+    second_index = generate_missing_panels(
+        beats_doc, slots, manifest, previous_index=first_index,
+        only={"s1b1"}, force=True,
+    )
+
+    assert len(second_index["panels"]) == 2, "s2b1 must still be in the index, carried forward"
+    by_id = {p["beat_id"]: p for p in second_index["panels"]}
+    assert by_id["s1b1"]["source"] == "generated"
+    assert by_id["s2b1"] == {
+        k: v for k, v in first_index["panels"][
+            [p["beat_id"] for p in first_index["panels"]].index("s2b1")
+        ].items()
+    }
+
+
+@patch("animatic.core.s3_writer.boto3.Session")
+@patch("animatic.core.panel_generator.genai.Client")
+def test_full_run_every_index_entry_has_required_reason_fields(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """Runs the full real 49-beat corpus (mocked calls) and asserts every
+    entry carries a non-empty prompt, source_reason, asset_slots_used,
+    shot_size_reason and cache_key (NFR-04)."""
+    beats_doc = json.loads(BEATS_PATH.read_text())
+    manifest = json.loads(MANIFEST_PATH.read_text())
+    slots = resolve_slots(beats_doc, PDF_PATH)
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    index = generate_missing_panels(beats_doc, slots, manifest)
+
+    assert index["total_panels"] == 49
+    for entry in index["panels"]:
+        assert entry["prompt"]
+        assert entry["source_reason"]
+        assert entry["asset_slots_used"]
+        assert entry["shot_size_reason"]
+        assert entry["cache_key"]
