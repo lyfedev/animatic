@@ -17,16 +17,25 @@ suppressed eye's anatomy (no "iris", "pupil", "eyelid", "eyebrow-arch") —
 naming an object as absent is still naming it, the same mistake that put a
 hat on every character when the blank-face wording bounded the face by
 "the hairline, hat brim and jaw contour" (D-07). `tests/test_panel_prompt.py`
-guards this at the value level; a live tracer run against `gemini-3.1-
-flash-image` on s2b7 (04-01 Task 1) drew the eyes fully rendered anyway —
-this wording is [ASSUMED] and expected to be revised by 04-02 after the
-scene-2 tracer batch (D-09).
+guards this at the value level.
 
-This module builds out across Plan 04-01's tasks: Task 1 wired the shot
-size mapping table and the close-up branch through the tracer beat (s2b7,
-a dialogue beat, scene 2). Task 2 (this pass) fills in the wide/medium
-framing and facial clauses, the no-character path, and the
-unrecognised-type fallback.
+This module builds out across two plans. Plan 04-01 wired the shot size
+mapping table and all three facial branches through a single tracer beat
+(s2b7). Its first live call drew the eyes fully rendered anyway (iris,
+pupil, eyelid crease) and separately let a character panel close on its
+facial clause with no lettering rule present at all ("TRAIN" painted onto
+a wall sign) — both fixed before 04-02 began (PROMPT_TEMPLATE_VERSION
+"v1"): the close-up clause stopped naming eyes in either direction, and
+the room rule was made to close every prompt, not only the no-character
+ones. 04-02's scene-2 batch (19 beats) then ran the plan's full two-pass
+revision budget. "v2" made both rules apply to every figure/surface in the
+frame rather than an implicit singular one — real but partial improvement.
+"v3", the last pass the plan allows, named the two contexts that still
+failed directly rather than trusting a broader rule to cover them by
+implication: a packed crowd and the moment of impact for the blank-face
+rule, and a familiar/iconic garment the model already "knows" the
+lettering for, for the room rule. Any defect still open past "v3" is
+carried in `.planning/WINDOWS.md`, not chased further (D-09's ceiling).
 """
 
 from __future__ import annotations
@@ -41,7 +50,36 @@ from animatic.core.style import STYLE_BLOCK, _strip_on_screen_text
 # manual --force — Phase 3's own regression history is the reason: the
 # same beat and the same slot art produced a passing and then a failing
 # image purely because the subject clause was reworded.
-PROMPT_TEMPLATE_VERSION = "v1"
+#
+# v2 (04-02's scene-2 review pass): two defects found judging live scene-2
+# output against the six review points. (1) The blank-face clause held for
+# a single figure but not reliably for two figures trading blows in the
+# same medium shot (s2b2, s2b16) or a crowd (s2b3) — full brows, eyes and
+# mouths were drawn on some figures while others in the same frame stayed
+# blank, as if the rule bound only to "the" (singular) face. (2) The room
+# rule's noun list never named garments, and a robe came back lettered
+# "ROCKY" (s2b17) — the same class of leak the room rule was written to
+# close for walls and signs, just on a surface the list didn't cover.
+#
+# v3 (04-02, second and LAST revision pass — the plan's two-pass ceiling):
+# regenerating scene 2 under v2 showed real but partial improvement (a
+# background boxer and a referee that were fully-featured under v1 came
+# back blank), but two failure modes survived clause-list wording: (1) a
+# whole crowd shouting (s2b3) and the figure absorbing a punch (s2b16)
+# still carried full faces — the v2 wording named "several trading blows"
+# but not a crowd, and named no exception for the moment of impact, where
+# the pull toward an expressive face is strongest. (2) "ROCKY" was still
+# lettered on the robe in s2b17 even with "garment" added to the room
+# rule's noun list — `output/beats.json` s2b17 literally quotes the robe's
+# real lettering ('The Italian Stallion'), which `_strip_on_screen_text`
+# does strip from the subject clause, but the model supplied "ROCKY" from
+# its own knowledge of the source film rather than from the prompt text,
+# so a same-sentence noun addition wasn't emphatic enough to override it.
+# Both clauses gained a dedicated, explicit exception naming the specific
+# context that was failing — a crowd, an impact, a familiar/iconic
+# garment — rather than trusting a longer noun list to cover it by
+# implication.
+PROMPT_TEMPLATE_VERSION = "v3"
 
 # Free, deterministic and defensible grammar across all 49 beats: the
 # fight plays in wides and mediums, the exchanges play close (D-01).
@@ -92,14 +130,27 @@ _FRAMING_SENTENCE = {
     ),
 }
 
-# The proven wording from asset_generator._subject_note's minor-character
-# branch (03-ART-REVIEW.md's second pass, D-06 of Phase 3) — carried
-# forward unchanged for wide/medium panels, never paraphrased.
+# Started as asset_generator._subject_note's minor-character wording
+# (03-ART-REVIEW.md's second pass, D-06 of Phase 3), proven there for one
+# figure at a time. Scene 2's medium shots put two figures trading blows in
+# the same frame, and the singular "the face" read as binding to one of
+# them — the other came back with a full brow, eyes and mouth (s2b2, s2b16;
+# s2b3's crowd showed the same split). Reworded at v2 to state the rule
+# holds for every head in the frame, not just one — real but partial
+# improvement (a background figure went blank that hadn't before), but a
+# packed crowd (s2b3) and the figure taking the punch at the story's most
+# dramatic beat (s2b16) still came back fully featured. v3 names those two
+# contexts directly rather than trusting "several trading blows" to cover
+# them by implication — the same lesson D-06 already taught once: a rule
+# that has to be inferred loses to a rule that is stated.
 _BLANK_FACE_CLAUSE = (
-    "Where the face sits, the outline traces one continuous blank plane "
-    "bounded only by the hairline and jaw contour — as bare and unmarked "
-    "as the open background itself, with no eyebrow, eye, nose or mouth "
-    "line interrupting that plane anywhere."
+    "Where each figure's face sits in the frame — every head present, "
+    "whether the scene holds one figure alone, two trading blows, or a "
+    "whole crowd packed shoulder to shoulder — the outline traces one "
+    "continuous blank plane bounded only by the hairline and jaw contour, "
+    "as bare and unmarked as the open background itself, with no eyebrow, "
+    "eye, nose or mouth line interrupting that plane on any of them, no "
+    "matter how strong the reaction or how hard the moment of impact."
 )
 
 # The new piece this phase adds — three lines shown, the eyes left blank,
@@ -124,10 +175,24 @@ _CLOSEUP_FACE_CLAUSE = (
 # a character panel closed on its facial clause and this rule was never in the
 # prompt at all. Panels render rooms whether or not a person is standing in
 # them, so the room rule is appended to every prompt and lands last (D-06).
+#
+# v2 added "garment" to the noun list — a robe still came back lettered
+# "ROCKY" (s2b17). The beat itself quotes the robe's real lettering
+# ('The Italian Stallion'), which _strip_on_screen_text does remove from
+# the subject clause, so the model was not reading the word from the
+# prompt at all — it supplied "ROCKY" from its own knowledge of the source
+# film. A same-sentence noun addition wasn't emphatic enough to override
+# that outside knowledge, so v3 gives the garment rule its own sentence and
+# names the failure mode directly: stay blank even when the garment is a
+# familiar or iconic one the model already "knows" the lettering for.
 _BLANK_ROOM_CLAUSE = (
     "Every wall, prop, door, plaque, sign and background surface in the "
-    "room stays a plain, blank outline shape, carrying no lettering of "
-    "its own anywhere in the frame."
+    "room stays a plain, blank outline shape, carrying no lettering of its "
+    "own anywhere in the frame. Every garment a figure wears or puts on "
+    "follows the same rule, its outline staying just as plain and blank — "
+    "no name, initial or number sewn, printed or painted into it — even "
+    "when it is a familiar or iconic garment whose real lettering is well "
+    "known."
 )
 
 
@@ -151,15 +216,16 @@ def facial_clause_for(shot_size: str, has_characters: bool) -> tuple[str, str, s
             _CLOSEUP_FACE_CLAUSE,
             "brow_mouth_nose",
             "close-up shot size shows brow, mouth and nose lines only; "
-            "the eyes stay part of the blank face plane (D-05, [ASSUMED] "
-            "— pending validation on scene 2's tracer batch, 04-02)",
+            "the eyes stay part of the blank face plane (D-05; validated "
+            "against 9 of 10 sampled live scene-2 close-ups, 04-02)",
         )
     return (
         _BLANK_FACE_CLAUSE,
         "none",
         f"{shot_size} shot size carries no facial features (D-05) — "
-        f"wording is Phase 3's proven asset_generator._subject_note "
-        f"clause, carried forward unchanged",
+        f"wording started from Phase 3's asset_generator._subject_note "
+        f"clause and was reworded in 04-02 to bind explicitly to every "
+        f"figure in the frame, not one implicit face",
     )
 
 
