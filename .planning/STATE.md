@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-current_phase: 3
-current_phase_name: 3/3 plans executed, verification pending; Phase 4 next
-status: unknown
-stopped_at: Completed 03-03-PLAN.md — real run, art review, Asset Slot Contract
-last_updated: "2026-08-25T01:38:53.114Z"
-state_head: 7776c83a82ceb9d9925ab3802a57864336abc6de
+current_phase: 4
+current_phase_name: 1/3 plans executed (04-01 — panel pipeline tracer complete)
+status: in_progress
+stopped_at: Completed 04-01-PLAN.md — panel pipeline tracer, prompt clauses, cache/retry
+last_updated: "2026-08-25T07:01:46.963Z"
+state_head: 08c10f5af9e4caec1a5129700027d2e261bfa13d
 progress:
   total_phases: 10
   completed_phases: 0
-  total_plans: 5
-  completed_plans: 3
+  total_plans: 8
+  completed_plans: 4
   percent: 0
 ---
 
@@ -19,9 +19,9 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 3 — 3/3 plans executed, verification pending (see 03-ART-REVIEW.md); Phase 4 (Panel Generation) is next
+- **Phase:** 4 — 1/3 plans executed (04-01: panel pipeline tracer, cache/retry — see 04-01-SUMMARY.md); 04-02 (scene-2 batch) next
 - **Active work:** None
-- **Last updated:** 2026-08-24
+- **Last updated:** 2026-08-25
 - **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com (HTTP only — no TLS, see Phase 1 gap)
 
 ## Milestone Status
@@ -33,7 +33,7 @@ progress:
 | 1 | Project Scaffold & Infrastructure | ⚠️ Complete, 1 gap | [1-VERIFICATION.md](phases/phase-1/1-VERIFICATION.md) — 5/6, no CloudFront CDN |
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
 | 3 | Asset Management & Manifest | 🔄 3/3 plans executed, verification pending | [03-03-SUMMARY.md](phases/phase-3/03-03-SUMMARY.md) |
-| 4 | Panel Generation | ⬜ Not started | — |
+| 4 | Panel Generation | 🔄 1/3 plans executed | [04-01-SUMMARY.md](phases/phase-4/04-01-SUMMARY.md) |
 | 5 | Audio Synthesis | ⬜ Not started | — |
 | 6 | Motion Generation | ⬜ Not started | — |
 | 7 | Video Assembly | ⬜ Not started | — |
@@ -309,6 +309,37 @@ the original bytes and re-running settled `stale_beat_ids` back to `[]`.
 art do not visually drift apart (D-08). Do not add a second, per-phase
 style block.
 
+## Phase 4 Plan 01 — Panel Pipeline Tracer, Prompt Clauses, Cache/Retry (complete 2026-08-25)
+
+`panel_prompt.py`/`panel_generator.py`/`panel_manifest.py`/`scripts/build_panels.py` proved
+the full per-beat path live on `s2b7` (scene 2, dialogue, `CORNERMAN`): shot size derived
+from beat type (D-01), a prompt assembled STYLE_BLOCK → framing → subject → facial rule
+LAST (D-06), a real `gemini-3.1-flash-image` call, a local+S3 write, and one
+`output/panels/index.json` entry naming both dependent slots, the prompt and a cache key.
+`output/beats.json` verified byte-identical (MD5) before/after — shot size is never written
+back (D-02).
+
+Tasks 2 and 3 followed strict RED→GREEN TDD: the full test file was written and run first
+(collection/assertion failures confirmed genuine RED), then the implementation landed. Task 3
+added cache-hit reuse (`panel_cache_key` — beat content + shot size + each dependent slot's
+CURRENT `content_hash` read fresh from the manifest + `PROMPT_TEMPLATE_VERSION`), one retry
+after a 2s delay on a failing call, and the whole-index carry-forward rule (a beat outside
+`--only`/`--scene`'s selection is carried forward from the previous index unchanged, mirroring
+Phase 3's own `--only` regression class). 143 tests passing (was 89 at phase start), all
+mocked — the live call happens once, by the CLI, never in the suite.
+
+**Known miss, not yet fixed — this phase's flagged risk:** the close-up facial clause (D-05)
+is marked `[ASSUMED]` in `04-RESEARCH.md` and did not visually comply on this first live
+image: the model drew a fully rendered eye (iris, pupil, eyelid crease) while correctly
+drawing the brow/mouth/nose lines. The prompt TEXT is correct and pinned at the value level
+by `tests/test_panel_prompt.py` — this is a live-model compliance gap a unit test cannot
+catch, only a human looking at the picture can. Logged as `.planning/WINDOWS.md` entry 5
+(open). 04-02's scene-2 tracer batch (19 beats) is the intended mechanism to catch and fix
+this before it ships across all 49 panels (D-09).
+
+`output/panels/index.json` currently holds exactly 1 entry (`s2b7`) — expected for this plan's
+scope. 04-02 owns generating the rest of scene 2.
+
 ## Deadline
 
 2026-09-09 14:00 PDT
@@ -318,11 +349,12 @@ style block.
 - [Phase ?]: Phase 3 Plan 01: slot_resolver resolves 16 slots (9 char + 7 loc); rank 1 rocky, rank 2 int_blue_door_fight_club; image prompts must strip color words from location names to avoid the model painting that color onto whatever it names
 - [Phase 3]: Plan 02: reference art matched by slot_directory (wins outright) then filename_token (token-subset, not substring); generate_missing_art groups by art_slot_id and orders by min priority_rank so shared slots generate at their highest-priority member's rank; s3_writer.put_bytes centralizes all S3 writes in the codebase behind one honest S3Result
 - [Phase 3]: Phase 3 Plan 03: real 16-slot manifest + 13 art files shipped; rocky is now generated (not reference-backed) per 5f581e0's slot-directory-only rule; strengthened no-facial-features subject clause fixed a repeat regression; Asset Slot Contract settled in STATE.md for Phase 4/5
+- [Phase 4]: Phase 4 Plan 01: panel pipeline (panel_prompt/panel_generator/panel_manifest/build_panels.py) proven end-to-end on tracer beat s2b7; cache-hit reuse, retry, and whole-index carry-forward implemented under TDD; close-up facial clause (D-05, [ASSUMED]) visually failed on first live generation (eyes fully rendered) — flagged in WINDOWS.md entry 5 for 04-02 to revise
 
 ## Session
 
-**Last session:** 2026-08-25T01:38:47.553Z
-**Stopped at:** Completed 03-03-PLAN.md — real run, art review, Asset Slot Contract
+**Last session:** 2026-08-25T07:01:46.950Z
+**Stopped at:** Completed 04-01-PLAN.md — panel pipeline tracer, prompt clauses, cache/retry
 **Resume file:** None
 
 ## Performance Metrics
@@ -332,3 +364,4 @@ style block.
 | Phase 3 P01 | 32min | 3 tasks | 9 files |
 | Phase 3 P02 | 62min | 3 tasks | 7 files |
 | Phase 3 P03 | 25min | 3 tasks | 5 files |
+| Phase 4 P01 | 24min | 3 tasks | 7 files |
