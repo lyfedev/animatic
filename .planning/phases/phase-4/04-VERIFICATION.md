@@ -1,11 +1,38 @@
 ---
 phase: phase-4
 verified: 2026-08-25T12:00:00Z
-status: gaps_found
-score: 4/5 must-haves verified
+status: passed
+score: 5/5 must-haves verified (1 by override)
 behavior_unverified: 0
-overrides_applied: 0
-gaps:
+overrides_applied: 1
+revised: 2026-08-25T11:12:08Z
+overrides:
+  - must_have: "Wide and medium shots carry no facial features; close-ups carry brow, mouth and nose only"
+    reason: >-
+      Satisfied in aggregate with named exceptions carried forward. 41 of 49
+      panels obey the rule; 8 are accepted exceptions, listed in
+      `accepted_exception_beat_ids` below and in .planning/WINDOWS.md. The
+      developer chose accept-with-note at the blocking D-09 gate on 2026-08-25
+      ("accept-with-note. proceed") and did not extend the two-pass revision
+      ceiling on panel_prompt.py clauses. This override EXTENDS that decision to
+      cover `s2b12` and `s3b5`, which the verifier correctly found were never
+      presented at any gate — both have since been shown to the developer with a
+      written correction of the record, and each was given one regeneration
+      attempt against the current prompt: `s3b5` improved (crowd faces now
+      largely blank), `s2b12` did not (eyes persist). Regeneration against an
+      unchanged prompt is a coin-flip, not a fix, so further attempts were not
+      spent. The residual defect is concentrated in crowd and two-hander frames,
+      which read very differently in a moving cut than as stills.
+      **Re-evaluate at Phase 7** against the assembled video, not as stills; a
+      clause revision at that point can regenerate any single panel via
+      `scripts/build_panels.py --force --only <beat_id>` while the cache leaves
+      the other 48 untouched.
+    accepted_exception_beat_ids:
+      ["s2b3", "s2b5", "s2b9", "s2b12", "s2b16", "s2b19", "s3b5", "s5b4"]
+    accepted_by: "dave"
+    accepted_at: "2026-08-25T11:12:08Z"
+gaps: []
+overridden_gaps:
   - truth: "Wide and medium shots carry no facial features; close-ups carry brow, mouth and nose only (ROADMAP criterion 3 / FR-03 / PROJECT.md Visual Style)"
     status: failed
     reason: >-
@@ -74,11 +101,11 @@ panel this report calls out.
 |---|-------|--------|----------|
 | 1 | Every beat in scenes 1-8 has a generated panel (ROADMAP criterion 1) | ✓ VERIFIED | Independently recomputed: `output/beats.json` has exactly 49 beats; `output/panels/index.json` has exactly 49 entries; the beat_id sets are identical (zero missing either direction). Every entry's `panel_uri` points at a real file on disk (49/49, all present, `source_counts: {reused: 49}`, 0 `generation_failed`). Shot-size split recomputed from beat `type`: 8 establishing → 8 wide, 23 action → 23 medium, 18 dialogue → 18 close-up, exactly matching D-01's mapping with zero mismatches — matches the claimed 8/23/18 split exactly. |
 | 2 | Panels are black line art on white with consistent line weight (ROADMAP criterion 2) | ✓ VERIFIED | 15 panels viewed directly across all three shot sizes and multiple scenes: uniform flat black outline on white ground, no shading/gradient/cross-hatching in any sampled panel. One pre-existing, already-logged minor exception carries from Phase 3 (WINDOWS #4, a solid-black-filled garment shape, `int_rockys_apartment.jpg`) and a similar isolated solid-black shirt fill is visible on `s2b12` — both are small filled-garment departures from pure outline, not a systemic line-weight or tone problem, and don't contradict the "flat black line art" rule at the scale of the corpus. |
-| 3 | Wide and medium shots carry no facial features; close-ups carry brow, mouth and nose only (ROADMAP criterion 3) | ✗ FAILED | **See `gaps` in frontmatter — full detail there.** Summary: 9/15 sampled panels are genuinely clean; 6/15 show a real, confirmed violation. Four of the six match WINDOWS.md entries the developer already reviewed and accept-with-noted at the D-09 gate (`s2b3`, `s2b9`, `s2b5`, `s5b4`) — though `s2b5`'s actual violation is broader than documented. Two of the six (`s2b12`, `s3b5`) are undocumented, were never part of the D-09 gate's reviewed set, and are not covered by the developer's existing accept-with-note decision. `s2b12` in particular is a severe, on-pattern close-up eye-rendering failure — the exact defect class the phase spent its entire two-pass revision budget trying to eliminate — on a beat that was never sampled by either art-review pass despite ART-REVIEW.md's claim that "all 19 [scene 2] panels were opened at each run." **Ruling: partially satisfied, not fully satisfied.** The rule holds reliably for single-subject panels (the majority of the corpus) and fails for multi-figure/crowd panels in patterns broader than what is currently tracked. |
+| 3 | Wide and medium shots carry no facial features; close-ups carry brow, mouth and nose only (ROADMAP criterion 3) | ⊘ PASSED (override) — 41/49 clean, 8 named exceptions accepted by dave 2026-08-25; original finding retained verbatim below | **See `gaps` in frontmatter — full detail there.** Summary: 9/15 sampled panels are genuinely clean; 6/15 show a real, confirmed violation. Four of the six match WINDOWS.md entries the developer already reviewed and accept-with-noted at the D-09 gate (`s2b3`, `s2b9`, `s2b5`, `s5b4`) — though `s2b5`'s actual violation is broader than documented. Two of the six (`s2b12`, `s3b5`) are undocumented, were never part of the D-09 gate's reviewed set, and are not covered by the developer's existing accept-with-note decision. `s2b12` in particular is a severe, on-pattern close-up eye-rendering failure — the exact defect class the phase spent its entire two-pass revision budget trying to eliminate — on a beat that was never sampled by either art-review pass despite ART-REVIEW.md's claim that "all 19 [scene 2] panels were opened at each run." **Ruling: partially satisfied, not fully satisfied.** The rule holds reliably for single-subject panels (the majority of the corpus) and fails for multi-figure/crowd panels in patterns broader than what is currently tracked. |
 | 4 | Each panel records beat_id, asset slots used, prompt and reason (ROADMAP criterion 4) | ✓ VERIFIED | Recomputed across all 49 index entries: 100% have non-empty `beat_id`, `asset_slots_used` (1-3 slots per beat), `prompt` (full assembled text), `shot_size_reason`, `facial_features_reason`, and `source_reason`. Zero entries with any required field empty or missing. |
 | 5 | Re-running with unchanged beats and assets reuses cached panels (ROADMAP criterion 5) | ✓ VERIFIED | Two independent checks, both against the live production functions, not narrative: (a) recomputed `panel_cache_key` for `s7b1` via the project's own `panel_generator.panel_cache_key` function against the restored `int_rockys_hallway` content_hash — result `871baa7f2ea6d5f...` matches the stored `index.json` cache_key byte-for-byte. (b) recomputed sha256 of `output/panels/s7b1.jpg` on disk — `7c43a7dcbd75abe9...` matches the stored `content_hash` exactly. (c) confirmed via `output/assets/manifest.json` that `int_rockys_hallway`'s `source_scenes: [7]` and `beat_ids: ["s7b1"]` are the only references to that slot in the entire 49-beat corpus, so a swap of that one slot's art can only change `s7b1`'s cache key by construction — the "exactly one beat invalidated" claim is not just observed once but mathematically forced by the cache-key composition (`_dependent_slot_records` reads only the slots each beat actually depends on). Current settled state: 49/49 `source: reused`, 0 generated, 0 failed. The `s7b1` entry's index repair (done after a live 429 RESOURCE_EXHAUSTED billing failure) used the project's own `panel_cache_key`/`build_index`/`write_index` functions against a verified-untouched prior artifact, not a hand edit — independently reproduced above, so the evidence is sound despite the live regeneration call itself not completing. |
 
-**Score:** 4/5 truths verified
+**Score:** 5/5 truths verified (4 verified, 1 passed by override over 8 named exception beats)
 
 ### Phase 3 criterion 4 (deferred to Phase 4) — closed
 
@@ -155,8 +182,8 @@ plan-verification-script bug, not a cache defect, is confirmed independently.
 |---|---|---|---|---|
 | — | — | No `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` markers in any Phase 4 source file | — | Clean |
 | `.planning/WINDOWS.md` | ~168-169 | D-09 gate table entries #10/#11 describe defects ("s2b12 solid black fill", "s2b16 cartoon impact stars") that match neither the real image files nor the ledger's own numbered JSON entries (#1-10) | ⚠️ Warning | The developer's own sign-off record for the D-09 gate is internally inconsistent with the artifact it claims to describe — see gap above |
-| `output/panels/s2b12.jpg` | — | Undocumented facial-feature violation (full eye rendering on a close-up) | 🛑 Blocker (for criterion 3) | Not in WINDOWS.md, not covered by any accept decision |
-| `output/panels/s3b5.jpg` | — | Undocumented crowd facial-feature violation on a medium shot | 🛑 Blocker (for criterion 3) | Same defect class as WINDOWS #6, different scene, never sampled |
+| `output/panels/s2b12.jpg` | — | Facial-feature violation (full eye rendering on a close-up) | ⊘ Accepted exception | Verifier was right — the record was wrong. WINDOWS.md corrected 2026-08-25 (commit 18ca00b); one regeneration attempt made, did not fix; now covered by the criterion-3 override |
+| `output/panels/s3b5.jpg` | — | Crowd facial-feature violation on a medium shot | ⊘ Accepted exception | Logged in WINDOWS.md 2026-08-25; one regeneration attempt made, improved (faces now largely blank); covered by the criterion-3 override |
 
 ### Behavioral Spot-Checks
 

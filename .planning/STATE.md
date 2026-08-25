@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-current_phase: 4
-current_phase_name: 3/3 plans executed (04-01 tracer, 04-02 scene-2 review, 04-03 full run/cache proof/Panel Contract) — verification pending
-status: in_progress
-stopped_at: Completed 04-03-PLAN.md — full run, cache proof, Panel Contract; Phase 4 complete
-last_updated: "2026-08-25T10:10:23.690Z"
+current_phase: 5
+current_phase_name: Audio Synthesis
+status: ready_to_plan
+stopped_at: Phases 3 and 4 verified and closed (each 1 accepted override). Phase 5 not yet planned.
+last_updated: "2026-08-25T11:12:08Z"
 state_head: b8170b48296933be829f4c0a03aa161af5bb4869
 progress:
   total_phases: 10
-  completed_phases: 0
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 5
-  percent: 0
+  completed_plans: 8
+  percent: 40
 ---
 
 # Animatic — STATE.md
@@ -19,8 +19,9 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 4 — Complete, 3/3 plans executed. All 49 panels generated (04-01: tracer/pipeline; 04-02: scene-2 review, PROMPT_TEMPLATE_VERSION v3; 04-03: remaining 30 beats, live cache proof, Panel Contract). Developer's D-09 gate: accept-with-note — 5 open WINDOWS.md items carried into Phase 5+
+- **Phase:** 5 — Audio Synthesis, not yet planned. Phases 3 and 4 are closed: both verified `passed`, each carrying one explicit developer override (Phase 3: reference art held unexercised; Phase 4: 8 named facial/lettering exception beats).
 - **Active work:** None
+- **Carried into Phase 5+:** 8 WINDOWS.md panel defects, re-evaluated at Phase 7 in the assembled cut rather than as stills
 - **Last updated:** 2026-08-25
 - **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com (HTTP only — no TLS, see Phase 1 gap)
 
@@ -32,8 +33,8 @@ progress:
 |-------|-------|--------|----------|
 | 1 | Project Scaffold & Infrastructure | ⚠️ Complete, 1 gap | [1-VERIFICATION.md](phases/phase-1/1-VERIFICATION.md) — 5/6, no CloudFront CDN |
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
-| 3 | Asset Management & Manifest | 🔄 3/3 plans executed, verification pending | [03-03-SUMMARY.md](phases/phase-3/03-03-SUMMARY.md) |
-| 4 | Panel Generation | ✅ Complete, 5 open windows | [04-01-SUMMARY.md](phases/phase-4/04-01-SUMMARY.md), [04-ART-REVIEW.md](phases/phase-4/04-ART-REVIEW.md) |
+| 3 | Asset Management & Manifest | ✅ Complete, 1 override | [03-VERIFICATION.md](phases/phase-3/03-VERIFICATION.md) — 7/7, reference art held unexercised |
+| 4 | Panel Generation | ✅ Complete, 1 override | [04-VERIFICATION.md](phases/phase-4/04-VERIFICATION.md) — 5/5, 41/49 panels clean, 8 named exceptions |
 | 5 | Audio Synthesis | ⬜ Not started | — |
 | 6 | Motion Generation | ⬜ Not started | — |
 | 7 | Video Assembly | ⬜ Not started | — |

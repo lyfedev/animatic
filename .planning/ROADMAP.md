@@ -15,8 +15,8 @@ replacement, and the submission deliverables.
 
 - [x] **Phase 1: Project Scaffold & Infrastructure** - Repo, Python layout, AWS hosting skeleton, CI, health endpoint
 - [x] **Phase 2: Beat Parser** - Rocky PDF to a structured beat list with machine-readable reasons
-- [ ] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
-- [ ] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
+- [x] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
+- [x] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
 - [ ] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
 - [ ] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
 - [ ] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
@@ -225,8 +225,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Infrastructure | 1/1 | Complete (1 gap: no CDN) | 2026-08-23 |
 | 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
-| 3. Asset Management & Manifest | 3/3 | In Progress|  |
-| 4. Panel Generation | 3/3 | In Progress|  |
+| 3. Asset Management & Manifest | 3/3 | Complete (1 override: reference art held unexercised) | 2026-08-25 |
+| 4. Panel Generation | 3/3 | Complete (1 override: 8 named facial/lettering exceptions) | 2026-08-25 |
 | 5. Audio Synthesis | 0/TBD | Not started | - |
 | 6. Motion Generation | 0/TBD | Not started | - |
 | 7. Video Assembly | 0/TBD | Not started | - |
