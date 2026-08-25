@@ -64,6 +64,16 @@ def main() -> None:
         help="Regenerate every selected beat's panel even if its cache key is unchanged",
     )
     parser.add_argument(
+        "--from-plates",
+        action="store_true",
+        help=(
+            "Compose each panel FROM its slot art rather than from a text "
+            "description of it (lifts D-08). This is what makes a character "
+            "model sheet visible in the cut. Re-verify the facial rule after "
+            "using it — a seed image can overrule a prompt clause."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Resolve beats and slots without calling the image API",
@@ -148,6 +158,7 @@ def main() -> None:
         only=only,
         scene=args.scene,
         on_progress=_progress,
+        condition_on_plates=args.from_plates,
     )
 
     print("\nStep 3/3  Index written")

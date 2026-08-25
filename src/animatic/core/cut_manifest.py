@@ -45,8 +45,11 @@ def build_index(
         by_source[entry["shot_source"]] = by_source.get(entry["shot_source"], 0) + 1
 
     planned = round(sum(e["shot_secs"] for e in ordered), 2)
+    # A daily IS real footage — 22 seconds of actual film reported as animatic
+    # would understate the cut by exactly the amount that matters most.
+    _REAL = ("footage", "daily")
     footage_secs = round(
-        sum(e["shot_secs"] for e in ordered if e["shot_source"] == "footage"), 2
+        sum(e["shot_secs"] for e in ordered if e["shot_source"] in _REAL), 2
     )
 
     return {
@@ -66,6 +69,13 @@ def build_index(
         # of the cut than three 2-second ones.
         "real_footage_pct": round(100 * footage_secs / planned, 1) if planned else 0.0,
         "real_footage_secs": footage_secs,
+        # A daily collapses several beats into one shot, so the cut has fewer
+        # shots than the beat list has beats. Saying so keeps the two
+        # reconcilable.
+        "beats_covered_by_dailies": sorted(
+            b for e in ordered for b in e.get("covers_beat_ids", [])
+        ),
+        "hand_edited_beat_ids": [e["beat_id"] for e in ordered if e.get("hand_made")],
         # Carried from the audio index so a viewer of this file does not have to
         # open that one to learn the cut contains stale or mislabelled audio.
         "stale_audio_beat_ids": audio_index.get("stale_beat_ids", []),

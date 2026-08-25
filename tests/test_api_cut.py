@@ -181,6 +181,9 @@ class TestRenderModes:
         return counts
 
     def test_panels_mode_is_stills_only(self):
+        """Every source above the generated panel is ignored, not just the
+        two that existed when the mode was written. A daily or a hand edit
+        leaking into 'all panels' makes it 'whatever is on disk'."""
         assert set(self._sources("panels")) == {"still"}
 
     def test_animatic_mode_admits_motion_but_not_footage(self):
@@ -188,7 +191,7 @@ class TestRenderModes:
 
     def test_partial_mode_admits_everything(self):
         # Nothing is filtered out; what appears depends on what is on disk.
-        assert set(self._sources("partial")) <= {"still", "motion", "footage"}
+        assert set(self._sources("partial")) <= {"still", "motion", "footage", "daily", "edited"}
 
     def test_the_modes_do_not_all_produce_the_same_cut(self):
         assert self._sources("panels") != self._sources("animatic")

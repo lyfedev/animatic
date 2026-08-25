@@ -64,3 +64,7 @@ assets/Rocky.mp4
 # Supplied real footage (large, and licensed material)
 assets/footage/
 output/video/
+
+# Hand edits and dailies (large, and yours — never committed)
+assets/edited-panels/
+assets/dailies/

@@ -196,6 +196,29 @@ _BLANK_ROOM_CLAUSE = (
 )
 
 
+# Appended ONLY when a panel is generated from reference plates. A seed image
+# can overrule a prompt — the S-03 spike returned a plate-conditioned panel
+# with facial features despite the clause being present — so when plates are
+# supplied the rule is restated after them and the plates are demoted to what
+# they are: a source for build, clothing and fittings, not for the face.
+_PLATE_CONDITIONING_CLAUSE = (
+    "The supplied drawings are the source for each figure's build and "
+    "clothing and for the room's fittings, and for nothing else. Where a face "
+    "sits in this new frame, follow the face rule stated above exactly as it "
+    "is written, whatever the supplied drawings happen to show."
+)
+
+
+def build_conditioned_prompt(base_prompt: str) -> str:
+    """The prompt for a plate-seeded panel: the base, then the plate rule.
+
+    Lands last for the reason D-06 established — a rule stated before another
+    rule loses to it — and this is the one place where the thing it has to beat
+    is not text at all but an image.
+    """
+    return f"{base_prompt}\n\n{_PLATE_CONDITIONING_CLAUSE}"
+
+
 def facial_clause_for(shot_size: str, has_characters: bool) -> tuple[str, str, str]:
     """Return (clause, facial_features, facial_features_reason).
 

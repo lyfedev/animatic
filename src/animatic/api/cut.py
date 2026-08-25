@@ -55,10 +55,23 @@ _MAX_UPLOAD_BYTES = 200 * 1024 * 1024
 
 # DR-04's three states, as render modes. Named rather than expressed as two
 # booleans at the call site so the UI and the API agree on what they mean.
+# "panels" must ignore EVERY source above the generated panel, not just the
+# two that existed when it was written. A mode that skips footage and motion
+# but splices a daily is not "all panels" — it is whatever happened to be on
+# disk, which is the thing DR-04 exists to rule out.
 RENDER_MODES = {
-    "panels": {"ignore_footage": True, "ignore_motion": True},
-    "animatic": {"ignore_footage": True, "ignore_motion": False},
-    "partial": {"ignore_footage": False, "ignore_motion": False},
+    "panels": {
+        "ignore_footage": True, "ignore_motion": True,
+        "ignore_dailies": True, "ignore_edits": True,
+    },
+    "animatic": {
+        "ignore_footage": True, "ignore_motion": False,
+        "ignore_dailies": True, "ignore_edits": False,
+    },
+    "partial": {
+        "ignore_footage": False, "ignore_motion": False,
+        "ignore_dailies": False, "ignore_edits": False,
+    },
 }
 
 # One render at a time. Two concurrent ffmpeg passes over the same 49 shots
