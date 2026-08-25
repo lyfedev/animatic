@@ -27,13 +27,15 @@ facial clause with no lettering rule present at all ("TRAIN" painted onto
 a wall sign) — both fixed before 04-02 began (PROMPT_TEMPLATE_VERSION
 "v1"): the close-up clause stopped naming eyes in either direction, and
 the room rule was made to close every prompt, not only the no-character
-ones. 04-02's scene-2 batch (19 beats) then surfaced two further defects
-now fixed at "v2": the blank-face clause held for one figure but not
-reliably for two figures sharing a medium-shot frame (full features drawn
-on one of two boxers trading blows), and the room rule's noun list never
-named garments, so a robe came back lettered with a character's name. Both
-clauses were reworded to state the rule applies to every figure/surface in
-the frame, not an implicit singular one — the same fix shape both times.
+ones. 04-02's scene-2 batch (19 beats) then ran the plan's full two-pass
+revision budget. "v2" made both rules apply to every figure/surface in the
+frame rather than an implicit singular one — real but partial improvement.
+"v3", the last pass the plan allows, named the two contexts that still
+failed directly rather than trusting a broader rule to cover them by
+implication: a packed crowd and the moment of impact for the blank-face
+rule, and a familiar/iconic garment the model already "knows" the
+lettering for, for the room rule. Any defect still open past "v3" is
+carried in `.planning/WINDOWS.md`, not chased further (D-09's ceiling).
 """
 
 from __future__ import annotations
@@ -58,7 +60,26 @@ from animatic.core.style import STYLE_BLOCK, _strip_on_screen_text
 # rule's noun list never named garments, and a robe came back lettered
 # "ROCKY" (s2b17) — the same class of leak the room rule was written to
 # close for walls and signs, just on a surface the list didn't cover.
-PROMPT_TEMPLATE_VERSION = "v2"
+#
+# v3 (04-02, second and LAST revision pass — the plan's two-pass ceiling):
+# regenerating scene 2 under v2 showed real but partial improvement (a
+# background boxer and a referee that were fully-featured under v1 came
+# back blank), but two failure modes survived clause-list wording: (1) a
+# whole crowd shouting (s2b3) and the figure absorbing a punch (s2b16)
+# still carried full faces — the v2 wording named "several trading blows"
+# but not a crowd, and named no exception for the moment of impact, where
+# the pull toward an expressive face is strongest. (2) "ROCKY" was still
+# lettered on the robe in s2b17 even with "garment" added to the room
+# rule's noun list — `output/beats.json` s2b17 literally quotes the robe's
+# real lettering ('The Italian Stallion'), which `_strip_on_screen_text`
+# does strip from the subject clause, but the model supplied "ROCKY" from
+# its own knowledge of the source film rather than from the prompt text,
+# so a same-sentence noun addition wasn't emphatic enough to override it.
+# Both clauses gained a dedicated, explicit exception naming the specific
+# context that was failing — a crowd, an impact, a familiar/iconic
+# garment — rather than trusting a longer noun list to cover it by
+# implication.
+PROMPT_TEMPLATE_VERSION = "v3"
 
 # Free, deterministic and defensible grammar across all 49 beats: the
 # fight plays in wides and mediums, the exchanges play close (D-01).
@@ -114,16 +135,22 @@ _FRAMING_SENTENCE = {
 # figure at a time. Scene 2's medium shots put two figures trading blows in
 # the same frame, and the singular "the face" read as binding to one of
 # them — the other came back with a full brow, eyes and mouth (s2b2, s2b16;
-# s2b3's crowd showed the same split). Reworded to state the rule holds for
-# every head in the frame, not just one, the same fix shape as making the
-# room rule close every prompt instead of only the no-character ones.
+# s2b3's crowd showed the same split). Reworded at v2 to state the rule
+# holds for every head in the frame, not just one — real but partial
+# improvement (a background figure went blank that hadn't before), but a
+# packed crowd (s2b3) and the figure taking the punch at the story's most
+# dramatic beat (s2b16) still came back fully featured. v3 names those two
+# contexts directly rather than trusting "several trading blows" to cover
+# them by implication — the same lesson D-06 already taught once: a rule
+# that has to be inferred loses to a rule that is stated.
 _BLANK_FACE_CLAUSE = (
     "Where each figure's face sits in the frame — every head present, "
-    "whether the scene holds one figure alone or several trading blows — "
-    "the outline traces one continuous blank plane bounded only by the "
-    "hairline and jaw contour, as bare and unmarked as the open background "
-    "itself, with no eyebrow, eye, nose or mouth line interrupting that "
-    "plane on any of them."
+    "whether the scene holds one figure alone, two trading blows, or a "
+    "whole crowd packed shoulder to shoulder — the outline traces one "
+    "continuous blank plane bounded only by the hairline and jaw contour, "
+    "as bare and unmarked as the open background itself, with no eyebrow, "
+    "eye, nose or mouth line interrupting that plane on any of them, no "
+    "matter how strong the reaction or how hard the moment of impact."
 )
 
 # The new piece this phase adds — three lines shown, the eyes left blank,
@@ -149,13 +176,23 @@ _CLOSEUP_FACE_CLAUSE = (
 # prompt at all. Panels render rooms whether or not a person is standing in
 # them, so the room rule is appended to every prompt and lands last (D-06).
 #
-# "garment" added in the 04-02 review pass: a robe came back lettered
-# "ROCKY" (s2b17) — the same leak this clause exists to close, just on a
-# surface the original noun list never named.
+# v2 added "garment" to the noun list — a robe still came back lettered
+# "ROCKY" (s2b17). The beat itself quotes the robe's real lettering
+# ('The Italian Stallion'), which _strip_on_screen_text does remove from
+# the subject clause, so the model was not reading the word from the
+# prompt at all — it supplied "ROCKY" from its own knowledge of the source
+# film. A same-sentence noun addition wasn't emphatic enough to override
+# that outside knowledge, so v3 gives the garment rule its own sentence and
+# names the failure mode directly: stay blank even when the garment is a
+# familiar or iconic one the model already "knows" the lettering for.
 _BLANK_ROOM_CLAUSE = (
-    "Every wall, prop, door, plaque, sign, background surface and garment "
-    "in the room stays a plain, blank outline shape, carrying no lettering "
-    "of its own anywhere in the frame."
+    "Every wall, prop, door, plaque, sign and background surface in the "
+    "room stays a plain, blank outline shape, carrying no lettering of its "
+    "own anywhere in the frame. Every garment a figure wears or puts on "
+    "follows the same rule, its outline staying just as plain and blank — "
+    "no name, initial or number sewn, printed or painted into it — even "
+    "when it is a familiar or iconic garment whose real lettering is well "
+    "known."
 )
 
 
