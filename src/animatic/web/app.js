@@ -8,6 +8,16 @@
 
 const $ = (id) => document.getElementById(id);
 
+/* Every URL below is relative to the document, never rooted at "/".
+ *
+ * The demo is served at "/" locally and behind a "/animatic" reverse proxy on
+ * vockell.com. The proxy strips its prefix, so the app sees "/api/state"
+ * either way — but the BROWSER has to ask for "/animatic/api/state", and an
+ * absolute path would ask for "/api/state" and get the host's 404. Relative
+ * paths resolve against the page, so both work with no server-side rewriting
+ * and no build step. The one requirement is a trailing slash on the page URL,
+ * which the proxy config enforces with a redirect. */
+
 const STATE_LABEL = {
   footage: "real",
   animatic_motion: "motion",
@@ -29,7 +39,7 @@ $("parse-btn").addEventListener("click", async () => {
   out.textContent = "Reading docs/rocky-1976.pdf and re-deriving every beat…";
 
   try {
-    const res = await fetch("/beats/parse", { method: "POST" });
+    const res = await fetch("beats/parse", { method: "POST" });
     const body = await res.json();
     if (!res.ok) throw new Error(body.detail || res.statusText);
 
@@ -72,7 +82,7 @@ $("render-btn").addEventListener("click", () => {
   fill.style.width = "0%";
   line.textContent = "Planning shots…";
 
-  const source = new EventSource(`/api/render?mode=${encodeURIComponent(mode)}`);
+  const source = new EventSource(`api/render?mode=${encodeURIComponent(mode)}`);
 
   const finish = (label) => {
     source.close();
@@ -117,7 +127,7 @@ $("render-btn").addEventListener("click", () => {
     );
 
     const player = $("player");
-    player.src = `${d.cut_url}&t=${Date.now()}`;
+    player.src = `${d.cut_url.replace(/^\//, "")}&t=${Date.now()}`;
     $("player-wrap").hidden = false;
 
     if (d.media_precomputed) {
@@ -143,7 +153,7 @@ $("render-btn").addEventListener("click", () => {
 
 async function refreshState() {
   try {
-    const res = await fetch("/api/state");
+    const res = await fetch("api/state");
     if (!res.ok) throw new Error(res.statusText);
     currentState = await res.json();
   } catch (err) {
@@ -167,7 +177,7 @@ function buildShot(shot) {
   el.title = `${shot.beat_id} · ${shot.shot_secs}s\n${shot.shot_source_reason}`;
 
   const img = document.createElement("img");
-  img.src = `/api/panel/${shot.beat_id}`;
+  img.src = `api/panel/${shot.beat_id}`;
   img.alt = `Panel for ${shot.beat_id}`;
   img.loading = "lazy";
 
@@ -220,7 +230,7 @@ async function upload(beatId, file) {
   const body = new FormData();
   body.append("file", file);
   try {
-    const res = await fetch(`/api/footage/${beatId}`, { method: "POST", body });
+    const res = await fetch(`api/footage/${beatId}`, { method: "POST", body });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.statusText);
     await refreshState();
@@ -232,7 +242,7 @@ async function upload(beatId, file) {
 
 async function removeFootage(beatId) {
   try {
-    const res = await fetch(`/api/footage/${beatId}`, { method: "DELETE" });
+    const res = await fetch(`api/footage/${beatId}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.statusText);
     await refreshState();
