@@ -112,10 +112,59 @@ class TestKeyMapping:
 
 
 class TestWhatIsFetched:
-    def test_rendered_cuts_are_not_fetched(self):
-        """A stale cut would contradict the state the demo reports."""
-        assert not any(p.startswith("video") for p in fetch_media.DEFAULT_PREFIXES)
-
     def test_everything_the_demo_serves_is_fetched(self):
-        for needed in ("beats/", "panels/", "audio/", "motion/", "assets/"):
+        for needed in ("beats/", "panels/", "audio/", "motion/", "assets/", "video/"):
             assert needed in fetch_media.DEFAULT_PREFIXES
+
+    def test_only_the_three_mode_cuts_are_fetched(self):
+        """A cut rendered against a different footage state contradicts
+        `state.json` beside it, which is worse than no video at all. Only the
+        footage-free mode renders are safe on a fresh container."""
+        assert fetch_media._VIDEO_ALLOWED == {
+            "video/container-index.json",
+            "video/animatic-panels.mp4",
+            "video/animatic-animatic.mp4",
+            "video/animatic-partial.mp4",
+        }
+
+    def test_the_local_render_index_is_never_fetched(self):
+        """`video/index.json` is rewritten by every local build_video run.
+
+        Fetching it would let a developer rendering with footage on their own
+        machine tell every container that its footage-free cut is stale.
+        """
+        assert "video/index.json" not in fetch_media._VIDEO_ALLOWED
+
+    def test_the_container_index_lands_where_the_app_reads_it(self):
+        assert fetch_media._local_for("video/container-index.json") == Path(
+            "output/video/index.json"
+        )
+
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "video/index.json",
+            "video/animatic.mp4",
+            "video/01-no-footage.mp4",
+            "video/02-partial-footage.mp4",
+            "video/03-full-footage.mp4",
+            "video/animatic-panels-scene1.mp4",
+        ],
+    )
+    def test_deliverable_and_scene_renders_are_skipped(self, key):
+        client = MagicMock()
+        client.get_paginator.return_value.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 1},
+                          {"Key": "video/animatic-panels.mp4", "Size": 2}]}
+        ]
+        got = [k for k, _ in fetch_media._list(client, "b", "video/")]
+        assert got == ["video/animatic-panels.mp4"]
+
+    def test_a_non_video_prefix_is_not_filtered(self):
+        client = MagicMock()
+        client.get_paginator.return_value.paginate.return_value = [
+            {"Contents": [{"Key": "panels/s2b2.jpg", "Size": 1}]}
+        ]
+        assert [k for k, _ in fetch_media._list(client, "b", "panels/")] == [
+            "panels/s2b2.jpg"
+        ]
