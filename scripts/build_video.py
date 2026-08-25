@@ -44,6 +44,14 @@ def main() -> None:
     parser.add_argument("--audio", default="output/audio/index.json")
     parser.add_argument("--panels", default="output/panels/index.json")
     parser.add_argument("--scene", type=int, default=None, help="Assemble one scene only")
+    parser.add_argument(
+        "--ignore-footage", action="store_true",
+        help="Render as if no real footage existed (DR-04's all-panels state)",
+    )
+    parser.add_argument(
+        "--ignore-motion", action="store_true",
+        help="Render as if no motion clips existed",
+    )
     parser.add_argument("--out", default=None, help="Output MP4 path")
     parser.add_argument("--no-s3", action="store_true", help="Skip the S3 upload")
     parser.add_argument(
@@ -61,7 +69,10 @@ def main() -> None:
     panel_index = _load_optional(args.panels, "panel")
 
     try:
-        shots = plan_shots(beats_doc, audio_index, scene=args.scene)
+        shots = plan_shots(
+            beats_doc, audio_index, scene=args.scene,
+            ignore_footage=args.ignore_footage, ignore_motion=args.ignore_motion,
+        )
     except MissingShotError as exc:
         sys.exit(str(exc))
 
