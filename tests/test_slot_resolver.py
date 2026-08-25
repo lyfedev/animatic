@@ -16,9 +16,10 @@ from pathlib import Path
 import pytest
 
 from animatic.core.slot_resolver import Slot, assert_no_voice_collisions, resolve_slots
+from corpus import beats_path
 
 PDF_PATH = Path("docs/rocky-1976.pdf")
-BEATS_PATH = Path("output/beats.json")
+BEATS_PATH = beats_path()
 
 EXPECTED_LOCATION_SLOT_IDS = sorted(
     [
