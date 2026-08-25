@@ -115,6 +115,13 @@ cp my_clip.mp4 assets/footage/s2b2.mp4 && PYTHONPATH=src python scripts/build_vi
 # work. Real footage beats generated motion, which beats the still panel.
 # Delete the file and re-run to put the animatic shot back. The cut manifest
 # reports real_footage_pct by screen time.
+
+# 14. Ask what the cut is made of, without rendering anything
+PYTHONPATH=src python scripts/build_state.py
+# Writes output/state.json: per-shot state (animatic_still / animatic_motion /
+# footage), the percentage of the cut that is real by screen time, and whether
+# the rendered cut still matches what would be rendered now. Reads what is on
+# disk, spends nothing, runs in milliseconds -- safe to poll.
 ```
 
 ## Deploying to AWS
