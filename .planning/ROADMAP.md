@@ -234,6 +234,32 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 ## Backlog (deferred)
 
+### Human steering of generation (captured 2026-08-24)
+Raised after seeing Phase 3's unassisted output: generation alone yields similar-looking
+characters and generic rooms, so the product is a first pass the user redirects, not a
+one-shot generator. **Gated on an experiment** — if a short description cannot meaningfully
+change a character or a room, there is no reason to build an interface for it.
+
+- **S-01 Slot inspector with description override** — show every location and character
+  slot, let the user add a description that feeds regeneration. Half-built already: slot
+  replacement, `content_hash` and `stale_beat_ids` exist (FR-02). Missing is the UI and a
+  *text* channel — today only an image file can be swapped. Backend hook is small:
+  `style.describe_slot()` already composes the location subject, so an override field it
+  prefers slots straight in. Natural home: Phase 9.
+- **S-02 Beat stretch** — let the user ask for more beats in a scene (e.g. the fight).
+  Genuinely new; nothing in the roadmap covers editing beats. Mechanically a re-parse of
+  one scene at higher density, but it invalidates downstream slots, panels and timing, so
+  it needs stale-tracking to extend past assets.
+- **S-03 Model sheet conditioning** — supply a reference sheet to drive character
+  consistency. **Technical risk:** 03-RESEARCH.md flags multi-image reference conditioning
+  as UNVERIFIED for `gemini-3.1-flash-image`, and NFR-03 forbids reaching for another
+  provider. Spike before planning.
+- **S-04 Video splice replacing beats** — already scoped as Phase 8 (FR-07/FR-08). Listed
+  here only to close the loop on the same idea set.
+
+Scope note: the Definition of Done does not require steering. Steering makes the demo
+better, not complete — pipeline to a watchable cut first.
+
 - Multi-script support
 - User-supplied script upload
 - Shot size / camera direction inference
