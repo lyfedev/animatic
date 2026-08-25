@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import re
 
+import re
+
 import pytest
 
 from animatic.core.panel_prompt import (
@@ -135,11 +137,23 @@ def test_closeup_facial_clause_shows_brow_mouth_nose():
     assert reason
 
 
-def test_closeup_facial_clause_keeps_eyes_part_of_the_blank_plane():
+def test_closeup_facial_clause_never_refers_to_eyes_at_all():
+    """The clause must not name them as present OR as absent.
+
+    First live panel drew a fully rendered eye — iris, pupil, eyelid crease —
+    while getting the three lines right. The wording said "a brow line above
+    the eyes" and "The eyes themselves stay part of the ... plane", naming
+    them twice. D-07: naming a thing draws it, in either direction. The
+    clause now states the three lines that ARE drawn and calls the rest of
+    the face one continuous plane.
+    """
     clause, _, _ = facial_clause_for("close-up", has_characters=True)
     lowered = clause.lower()
     assert "blank" in lowered
-    assert "eye" in lowered
+    assert not re.search(r"\beyes?\b", lowered), (
+        "close-up clause must not refer to eyes in any direction"
+    )
+    assert "brow" in lowered and "mouth" in lowered and "nose" in lowered
 
 
 @pytest.mark.parametrize("shot_size", ["wide", "medium", "close-up"])
@@ -198,11 +212,23 @@ def test_prompt_starts_with_style_block():
         assert prompt.startswith(STYLE_BLOCK)
 
 
-def test_facial_clause_is_last_for_a_beat_with_characters():
+def test_room_rule_closes_every_prompt_and_facial_clause_precedes_it():
+    """The lettering rule applies to panels with people in them too.
+
+    First live panel came back with "TRAIN" lettered on a wall sign: a
+    character panel closed on its facial clause and the room rule was not in
+    the prompt at all. Panels render rooms whether or not someone is standing
+    in one, so the room rule closes every prompt and the facial clause sits
+    immediately before it — the two rules that govern the picture land last.
+    """
     beat = _beat(characters=["CORNERMAN"])
     prompt, facial_features, _ = build_panel_prompt(beat, "close-up")
-    clause, _, _ = facial_clause_for("close-up", has_characters=True)
-    assert prompt.rstrip().endswith(clause.rstrip())
+    facial, _, _ = facial_clause_for("close-up", has_characters=True)
+    room, _, _ = facial_clause_for("wide", has_characters=False)
+
+    assert prompt.rstrip().endswith(room.rstrip()), "room rule must land last"
+    assert facial.rstrip() in prompt, "facial clause must still be present"
+    assert prompt.index(facial.rstrip()) < prompt.index(room.rstrip())
     assert facial_features == "brow_mouth_nose"
 
 

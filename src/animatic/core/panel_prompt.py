@@ -105,16 +105,25 @@ _BLANK_FACE_CLAUSE = (
 # The new piece this phase adds — three lines shown, the eyes left blank,
 # without naming the eye's own anatomy as the thing being left out
 # (see the eye-anatomy guard note in the module docstring).
+# First live attempt drew a fully rendered eye — iris, pupil, eyelid crease —
+# while getting the three lines right. The clause named "the eyes" twice
+# ("a brow line above the eyes", "The eyes themselves"), and D-07's lesson is
+# that naming a thing draws it, whether it is named as present or as absent.
+# This wording never refers to them at all: it states the three lines that ARE
+# drawn and describes the rest of the face as one uninterrupted plane.
 _CLOSEUP_FACE_CLAUSE = (
-    "Where the face sits, the outline draws three simple lines: a brow "
-    "line above the eyes, a single mouth line, and a short nose line down "
-    "the center of the face. The eyes themselves stay part of the same "
-    "blank, undrawn plane as the rest of the face, carrying no "
-    "interrupting line of their own anywhere in that space."
+    "Where the face sits, the outline draws exactly three lines and no "
+    "others: one brow line across the upper face, one mouth line, and one "
+    "short nose line down the centre. Every other part of that face is one "
+    "continuous blank plane, unbroken from hairline to jaw and as bare and "
+    "unmarked as the open background itself."
 )
 
-# For a beat naming no characters — the last rule in the prompt should be
-# one that applies, so this closes the prompt instead of a facial clause.
+# Applies to EVERY panel, not only the ones with no characters. The first
+# live panel came back with the word "TRAIN" lettered on a wall sign, because
+# a character panel closed on its facial clause and this rule was never in the
+# prompt at all. Panels render rooms whether or not a person is standing in
+# them, so the room rule is appended to every prompt and lands last (D-06).
 _BLANK_ROOM_CLAUSE = (
     "Every wall, prop, door, plaque, sign and background surface in the "
     "room stays a plain, blank outline shape, carrying no lettering of "
@@ -178,5 +187,14 @@ def build_panel_prompt(beat: dict[str, Any], shot_size: str) -> tuple[str, str, 
         shot_size, has_characters
     )
 
-    prompt = "\n\n".join([STYLE_BLOCK, framing, f"Subject: {subject}", facial_clause])
+    # The room rule closes EVERY prompt. A character panel used to end on its
+    # facial clause with no lettering rule anywhere, and came back with "TRAIN"
+    # lettered on a wall. When a facial clause applies it sits second-to-last,
+    # so the two rules that actually govern the picture are the last things
+    # said (D-06).
+    parts = [STYLE_BLOCK, framing, f"Subject: {subject}"]
+    if facial_clause and facial_clause != _BLANK_ROOM_CLAUSE:
+        parts.append(facial_clause)
+    parts.append(_BLANK_ROOM_CLAUSE)
+    prompt = "\n\n".join(parts)
     return prompt, facial_features, facial_features_reason
