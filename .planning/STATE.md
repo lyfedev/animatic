@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-current_phase: 7
-current_phase_name: Video Assembly
+current_phase: 10
+current_phase_name: Polish, Submission, Demo Video
 status: in_progress
-stopped_at: Phase 7 built and the cut is watchable. Phase 6 (motion) deferred behind it. Phase 7 verification not yet run.
+stopped_at: Phases 5-10 built. Only outstanding deliverable is the <=3 minute demo screen recording, which needs a human.
 last_updated: "2026-08-25T12:40:00Z"
 state_head: b8170b48296933be829f4c0a03aa161af5bb4869
 progress:
   total_phases: 10
-  completed_phases: 6
+  completed_phases: 9
   total_plans: 8
   completed_plans: 8
-  percent: 60
+  percent: 95
 ---
 
 # Animatic — STATE.md
@@ -36,16 +36,16 @@ progress:
 | 3 | Asset Management & Manifest | ✅ Complete, 1 override | [03-VERIFICATION.md](phases/phase-3/03-VERIFICATION.md) — 7/7, reference art held unexercised |
 | 4 | Panel Generation | ✅ Complete, 1 override | [04-VERIFICATION.md](phases/phase-4/04-VERIFICATION.md) — 5/5, 41/49 panels clean, 8 named exceptions |
 | 5 | Audio Synthesis | ✅ Complete, 14 clips stale | [Audio Contract](STATE.md) — 49 clips, 0 failed, 2 music cues |
-| 6 | Motion Generation | ⬜ Not started (deferred behind 7) | — |
+| 6 | Motion Generation | ✅ Complete | 3 of 4 clips; s8b6 refused by content guardrails, falls back to its panel |
 | 7 | Video Assembly | ✅ Complete | [Cut Contract](STATE.md) — 49 shots, 262.1s, swap seam proven live |
 
 ### Milestone 2 — Box Office (footage replacement + external-facing demo)
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 8 | Footage Replacement & Per-Shot State | ⬜ Not started |
-| 9 | Web UI & Demo Shell | ⬜ Not started |
-| 10 | Polish, Submission, Demo Video | ⬜ Not started |
+| 8 | Footage Replacement & Per-Shot State | ✅ Complete — state.json, round trip proven live |
+| 9 | Web UI & Demo Shell | ✅ Complete — SSE render, drag-drop swap, three states |
+| 10 | Polish, Submission, Demo Video | 🔶 4 of 5 — demo video needs a human |
 
 ## Key Decisions
 

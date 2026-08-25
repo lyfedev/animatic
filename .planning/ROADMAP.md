@@ -18,10 +18,10 @@ replacement, and the submission deliverables.
 - [x] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
 - [x] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
 - [x] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
-- [ ] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
+- [x] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
 - [x] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
-- [ ] **Phase 8: Footage Replacement & Per-Shot State** - Live swap of animatic shots for real footage
-- [ ] **Phase 9: Web UI & Demo Shell** - Hosted demo, three-state render, real progress indicators
+- [x] **Phase 8: Footage Replacement & Per-Shot State** - Live swap of animatic shots for real footage
+- [x] **Phase 9: Web UI & Demo Shell** - Hosted demo, three-state render, real progress indicators
 - [ ] **Phase 10: Polish, Submission, Demo Video** - Everything required for submission
 
 ## Phase Details
@@ -235,11 +235,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Asset Management & Manifest | 3/3 | Complete (1 override: reference art held unexercised) | 2026-08-25 |
 | 4. Panel Generation | 3/3 | Complete (1 override: 8 named facial/lettering exceptions) | 2026-08-25 |
 | 5. Audio Synthesis | 1/1 | Complete (14 clips stale, playable) | 2026-08-25 |
-| 6. Motion Generation | 0/TBD | Deferred behind Phase 7 | - |
+| 6. Motion Generation | 1/1 | Complete (3 of 4 clips; 1 refused) | 2026-08-25 |
 | 7. Video Assembly | 1/1 | Complete (built ahead of 6) | 2026-08-25 |
-| 8. Footage Replacement & Per-Shot State | 0/TBD | Not started | - |
-| 9. Web UI & Demo Shell | 0/TBD | Not started | - |
-| 10. Polish, Submission, Demo Video | 0/TBD | Not started | - |
+| 8. Footage Replacement & Per-Shot State | 1/1 | Complete | 2026-08-25 |
+| 9. Web UI & Demo Shell | 1/1 | Complete | 2026-08-25 |
+| 10. Polish, Submission, Demo Video | 1/1 | 4 of 5 (demo video outstanding) | 2026-08-25 |
 
 ## Backlog (deferred)
 
