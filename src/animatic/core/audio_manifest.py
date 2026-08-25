@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import re
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -114,6 +115,12 @@ def build_index(
             1 for e in ordered if e["source"] == "reused_after_failure"
         ),
         "stale_beat_ids": sorted(e["beat_id"] for e in ordered if e.get("stale")),
+        # More than one entry here means the corpus was voiced by more than one
+        # model — legitimate when a run finishes on the fallback after the
+        # primary's daily cap, but a consistency risk that should be visible.
+        "tts_models": dict(
+            Counter(e.get("tts_model", "unknown") for e in ordered)
+        ),
         # Clips whose file predates the text the index records for them. Phase 7
         # must not caption these from `text`, and Phase 9 must not display it.
         "text_mismatch_beat_ids": sorted(

@@ -555,8 +555,14 @@ unlike the panel key, because a changed duration means a changed narration budge
 `AUDIO_TEMPLATE_VERSION` re-plans narration as well as invalidating clips — the v1→v2 bump is
 the worked example.
 
-**Two rate limits, and the second one is the one that bites.** This backend caps the TTS model
-at **10 requests/minute** AND **100 requests/day per project**. The per-minute cap is handled by
+**Two rate limits, and the second one is the one that bites — but it is PER MODEL.** This
+backend caps the TTS model at **10 requests/minute** AND **100 requests/day**, and the daily one
+is scoped `GenerateRequestsPerDayPerProjectPerModel` — verified live 2026-08-25 by calling three
+TTS models after one was exhausted; the other two answered normally. **So a spent model is not a
+spent day.** `--tts-model gemini-2.5-flash-preview-tts` (or `settings.gemini_tts_model`) finishes
+a run the default cannot. Every clip records the `tts_model` that voiced it and the index counts
+them in `tts_models`, so a corpus split across two models is visible rather than discovered by
+ear. The window is also ROLLING, not midnight-reset: requests age out gradually. The per-minute cap is handled by
 pacing (`_TTS_MIN_INTERVAL_SECS`, 7.5s) plus a 429 that waits the interval the server names in
 its own `RetryInfo`. The per-day cap cannot be paced around: it answers `retryDelay: 43424s`
 (twelve hours), and a full run costs 49 calls plus one per overrunning narration retry, so **two
@@ -580,9 +586,12 @@ caption or display `text` for these**), and `halted_reason` (non-null when a run
 A stale entry is never treated as a cache hit, or the recovery would defeat itself: a rescued
 clip carries the cache key of the text it failed to generate.
 
-**Current corpus state (2026-08-25):** 49/49 playable, 0 failed, 35 current at v2, 14 stale of
-which 10 carry v1 audio. Criterion 5 holds across all 49. Clearing the stale set needs one
-`PYTHONPATH=src python scripts/build_audio.py` after the daily quota resets.
+**Current corpus state (2026-08-25):** 49/49 current at v2, 0 stale, 0 text-mismatched,
+0 failed. Criterion 5 holds across all 49. **37 clips voiced on `gemini-3.1-flash-tts-preview`,
+12 on `gemini-2.5-flash-preview-tts`** — scenes 5-8, almost all narration, generated on the
+fallback after the primary's daily cap. Same prebuilt voice names, so the cast is unchanged;
+whether the narrator audibly shifts around scene 5 is a judgement for an ear, not a test. To make
+the corpus single-model, re-run with `--force` on a fresh day.
 
 **`--scene`/`--only` narrow generation, never the index** — the whole-index rule, inherited from
 Phase 4 and tested here.

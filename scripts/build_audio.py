@@ -22,6 +22,7 @@ from pathlib import Path
 # Ensure src/ is on the path when run from project root
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from animatic.config import settings  # noqa: E402
 from animatic.core.audio_generator import generate_missing_audio  # noqa: E402
 from animatic.core.audio_timing import narration_budget_words  # noqa: E402
 from animatic.core.music_cues import build_music_prompt, find_music_cues  # noqa: E402
@@ -61,7 +62,21 @@ def main() -> None:
         action="store_true",
         help="Report what would be generated, spending nothing",
     )
+    parser.add_argument(
+        "--tts-model",
+        default=None,
+        help=(
+            "Override the TTS model. The daily request cap is PER MODEL, so "
+            "this is the escape hatch when the default is spent — e.g. "
+            "gemini-2.5-flash-preview-tts. Clips record which model voiced "
+            "them, and the index counts them, so a mixed corpus is visible."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.tts_model:
+        settings.gemini_tts_model = args.tts_model
+        print(f"  TTS model: {args.tts_model}")
 
     beats_doc = json.loads(Path(args.beats).read_text())
 
@@ -138,6 +153,11 @@ def _report(index: dict, elapsed: float) -> None:
         f"  {index['dialogue_count']} dialogue, {index['narration_count']} narration"
     )
     print(f"  narrator voice: {index['narrator_voice']}")
+    models = index.get("tts_models") or {}
+    if len(models) > 1:
+        print(f"  !! voiced by {len(models)} different models: {models}")
+    elif models:
+        print(f"  tts model: {next(iter(models))}")
     print(f"  cast: {len(index['cast'])} speaking part(s)")
     for name, entry in index["cast"].items():
         print(f"      {name:>14}  {entry['voice']}")

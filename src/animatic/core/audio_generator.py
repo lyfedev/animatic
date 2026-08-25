@@ -144,8 +144,15 @@ def _retry_after_secs(exc: Exception, cap: bool = True) -> float | None:
 # `lyria-3-clip-preview` returned a 30.8s stereo MP3 for a one-paragraph
 # prompt; `lyria-3-pro-preview` returned 175s. A cue in this cut is 5.9s and
 # 11.3s long, so the clip model is both sufficient and the cheaper call.
-MUSIC_MODEL = "models/lyria-3-clip-preview"
-TTS_MODEL = "models/gemini-3.1-flash-tts-preview"
+#
+# Read through functions rather than bound at import so a `--tts-model`
+# override reaches code that has already imported this module.
+def music_model() -> str:
+    return f"models/{settings.gemini_music_model}"
+
+
+def tts_model() -> str:
+    return f"models/{settings.gemini_tts_model}"
 
 
 class AudioGenerationError(Exception):
@@ -190,7 +197,7 @@ def synthesize_speech(text: str, voice: str, direction: str) -> tuple[bytes, flo
 
     _pace_tts()
     response = client.models.generate_content(
-        model=TTS_MODEL,
+        model=tts_model(),
         contents=speech_prompt(text, direction),
         config=types.GenerateContentConfig(
             response_modalities=["AUDIO"],
@@ -219,7 +226,7 @@ def generate_music(cue: MusicCue) -> tuple[bytes, str]:
     logger.info("Generating music for cue %s", cue.cue_id)
 
     response = client.models.generate_content(
-        model=MUSIC_MODEL,
+        model=music_model(),
         contents=build_music_prompt(cue),
         config=types.GenerateContentConfig(response_modalities=["AUDIO"]),
     )
@@ -367,7 +374,7 @@ def _call_with_retry(
             delay = _retry_after_secs(exc, cap=False)
             if delay is not None and delay >= _DAILY_QUOTA_THRESHOLD_SECS:
                 raise DailyQuotaExhausted(
-                    f"per-day request cap reached on {TTS_MODEL}: the server "
+                    f"per-day request cap reached on {tts_model()}: the server "
                     f"asks for {delay / 3600:.1f}h. Stopping rather than "
                     f"failing every remaining beat against the same wall."
                 ) from exc
@@ -418,6 +425,11 @@ def build_beat_entry(
         "shot_secs_reason": shot_reason,
         "fit_reason": fit_reason,
         "sample_rate": TTS_SAMPLE_RATE,
+        # Which model spoke this line. The daily cap is per model, so a long
+        # run can legitimately finish on the fallback — and a corpus voiced by
+        # two models is a consistency risk worth being able to SEE rather than
+        # discover by ear. `index["tts_models"]` counts them.
+        "tts_model": tts_model(),
         "cache_key": cache_key,
         "audio_template_version": AUDIO_TEMPLATE_VERSION,
     }
