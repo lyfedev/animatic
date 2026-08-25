@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 5
+open_count: 6
 waived_count: 0
 fixed_count: 4
-total_count: 9
-last_updated: 2026-08-25T08:13:11.083Z
+total_count: 10
+last_updated: 2026-08-25T09:51:31.059Z
 ---
 
 # Broken Windows Ledger
@@ -24,6 +24,7 @@ last_updated: 2026-08-25T08:13:11.083Z
 | 7 | 4 | stub | output/panels/s2b9.jpg |  | Close-up clause holds reliably for a single-character close-up but is less reliable with two characters sharing the frame: visible eye pupil dots appeared on the foreground character in s2b9, and on the secondary (non-primary) character in s2b5 and s2b7, despite the same unmodified close-up wording that reads clean on single-character close-ups (s2b13, s2b18, and others). Not touched by 04-02's two revision passes (both spent on the medium-shot and garment defects); carried, not chased. | open |  | 2026-08-25T08:13:06.843Z |  |
 | 8 | 4 | stub | output/panels/s2b15.jpg |  | Residual reaction marks (a closed/squinting eye line, a slightly open mouth) remain on the figure absorbing the punch in two-figure medium action shots (s2b15, s2b16) after 04-02's v3 impact-moment exception — full eyebrows/eyes are gone (major improvement over v1/v2) but a faint impact-reaction trace persists. Minor; within two-pass ceiling, carried not chased. | open |  | 2026-08-25T08:13:09.110Z |  |
 | 9 | 4 | stub | output/panels/s2b19.jpg |  | Possible partial lettering ('CL' followed by an obscured shape) visible on a background wall sign, partly blocked by a foreground figure's head. Unconfirmed at full resolution — flagged for a closer look before phase 4 ships; the room rule already names 'sign' explicitly so this would be a rule miss rather than a coverage gap. | open |  | 2026-08-25T08:13:11.083Z |  |
+| 10 | 4 | stub | output/panels/s5b4.jpg |  | Room-rule lettering leak confirmed outside scene 2 (D-12 predicted risk): the Animal Town Pet Shop sign, an OPEN placard and a PET SUPPLIES placard all render as legible drawn-in text despite the room rule's no-lettering-anywhere clause. Survived one --force retry (garbled to ANIMAL TOWN PET SIOP, still lettered). Beat content names the shop in plain prose, not a quoted on-screen-text directive, so _strip_on_screen_text correctly leaves it in the subject clause -- the room rule was supposed to suppress it being drawn as signage regardless and did not. Not chased with a clause revision per the plan's explicit instruction (two-pass ceiling on panel_prompt.py clauses already spent in 04-02). | open |  | 2026-08-25T09:51:31.059Z |  |
 
 ````json
 [
@@ -134,11 +135,21 @@ last_updated: 2026-08-25T08:13:11.083Z
     "reason": "",
     "recorded_at": "2026-08-25T08:13:11.083Z",
     "resolved_at": null
+  },
+  {
+    "id": 10,
+    "kind": "stub",
+    "phase": "4",
+    "file": "output/panels/s5b4.jpg",
+    "line": null,
+    "description": "Room-rule lettering leak confirmed outside scene 2 (D-12 predicted risk): the Animal Town Pet Shop sign, an OPEN placard and a PET SUPPLIES placard all render as legible drawn-in text despite the room rule's no-lettering-anywhere clause. Survived one --force retry (garbled to ANIMAL TOWN PET SIOP, still lettered). Beat content names the shop in plain prose, not a quoted on-screen-text directive, so _strip_on_screen_text correctly leaves it in the subject clause -- the room rule was supposed to suppress it being drawn as signage regardless and did not. Not chased with a clause revision per the plan's explicit instruction (two-pass ceiling on panel_prompt.py clauses already spent in 04-02).",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T09:51:31.059Z",
+    "resolved_at": null
   }
 ]
 ````
-
-
 ## Phase 4 D-09 gate — ACCEPT-WITH-NOTE (2026-08-25)
 
 Developer reviewed all 19 scene-2 panels at the blocking-human gate and chose

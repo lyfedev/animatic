@@ -106,3 +106,65 @@ Sampling widened past the five required beats during review (all 19 panels were 
 ## Overall verdict
 
 16 of 19 scene-2 panels read cleanly against all six points with no open finding. The three most consequential shots for the fight's dramatic arc — the opening two-hander (s2b2), the knockout punch (s2b16), and the corner announcer's call (s2b18) — went from visibly wrong (fully rendered faces, in some cases in the film's most iconic frames) to reading as the intended house style, with one small residual trace on s2b16. The crowd (s2b3) is the one panel that did not improve despite two dedicated passes and is carried openly rather than hidden. The close-up clause, the plan's single most novel and highest-risk piece, is validated and reliable for the single-subject case that covers the large majority of scene 2's 10 close-ups, with a documented, lower-severity exception for the two-figure case.
+
+## Second-pass review — Plan 04-03, the other 30 beats (2026-08-25)
+
+**Gate:** D-09's scene-2 decision gate closed accept-with-note (`.planning/WINDOWS.md` §"Phase 4 D-09 gate"). The two-pass clause-revision ceiling was already spent in 04-02 and was **not** extended here — `PROMPT_TEMPLATE_VERSION` stayed at `v3` for the entire run, no clause wording was touched.
+
+**Run:** `PYTHONPATH=src python scripts/build_panels.py` with no scene filter, one full pass, 344.2s wall time. Scene 2's 19 panels reused from cache at zero API cost (`source="reused"` on all 19, matching `output/panels/index.json`'s pre-run state exactly); the other 30 generated live, sequential, 0 `generation_failed` entries. Final index: 49 entries, shot sizes split 8 wide / 23 medium / 18 close-up, matching the D-01 mapping over the corpus's 8 establishing / 23 action / 18 dialogue beats. `output/beats.json` verified byte-identical (MD5 `4ccdd94ceea18daa6645743bf758aeb1`) before and after the run.
+
+Four beats sampled per the plan, chosen to cover what scene 2 could not exercise, scored against the same six points 04-02 used. A fifth scene-2 panel (`s2b18`) was reopened alongside them for a direct side-by-side line-weight comparison.
+
+### s3b7 — close-up, Promoter calling for Rocky (dressing room, D-11 carry-forward candidate)
+
+| # | Point | Verdict |
+|---|---|---|
+| 1 | Flat black linework on white | Pass — same even-weight outline as `s2b18`, no shading, no fill |
+| 2 | Sits alone in frame | Pass |
+| 3 | No drawn-in words | Pass — no lettering anywhere in the frame |
+| 4 | N/A (close-up, not wide/medium) | — |
+| 5 | Brow/mouth/nose only, eyes blank | Pass — one continuous brow line, one short nose line, one mouth line; no iris/pupil/eyelid mark of any kind. Consistent with the v3 close-up clause's single-subject reliability established in 04-02 |
+| 6 | Reads as the beat's action/room | Partial — the pose (both hands raised to frame the face, calling out) reads as the beat's "calls out ... for Rocky" action, but the shot is framed so tight that no dressing-room detail or period signifier is visible either way. **D-11's predicted carry-forward (promoter reading as a modern staffer) is neither confirmed nor refuted by this specific panel** — the close-up framing hides the context that would show it one way or the other. Not logged as a new defect; D-11 remains an open, already-logged carry-forward from Phase 3, untested by this sample |
+
+### s5b4 — medium, Rocky at the Animal Town Pet Shop window (D-12 lettering risk)
+
+| # | Point | Verdict |
+|---|---|---|
+| 1 | Flat linework | Pass |
+| 2 | Alone in frame | Pass |
+| 3 | No drawn-in words | **Fail.** The shop's sign renders as fully lettered block-capital text — "ANIMAL TOWN PET SHOP" on the first live generation, "ANIMAL TOWN PET SIOP" (a garbled respelling) after one `--force` retry — plus a legible "OPEN" placard and a "PET SUPPLIES" placard in the window. `output/beats.json`'s content for this beat is plain narrative prose ("Rocky pauses outside the Animal Town Pet Shop and peers through the window..."), not a quoted on-screen-text directive, so `_strip_on_screen_text` correctly leaves the shop name in the subject clause — the room rule's "no lettering ... anywhere in the frame" was supposed to suppress it being *drawn* as signage regardless, and did not. This is exactly the D-12 risk 04-CONTEXT.md flagged in advance ("the exact shape that once got painted into a frame"), now confirmed live outside scene 2 and surviving one retry |
+| 4 | Wide/medium: no facial features | Pass — the figure's face under the beanie is a fully blank plane on both the original and the retried generation, no eyebrow/eye/nose/mouth line at all |
+| 5 | N/A (medium) | — |
+| 6 | Reads as the beat's action/room | Pass — Rocky at a shop window, a large sad-eyed dog inside, matching the beat's "peers through the window at a sad, large dog" |
+
+Logged to `.planning/WINDOWS.md` as a new open entry (see below) per the plan's instruction: survives one `--force` retry of the affected beat_id, carried rather than chased with a clause revision (the two-pass ceiling on `panel_prompt.py`'s clauses is spent and was explicitly not reopened for this plan).
+
+### s8b1 — wide, Rocky's apartment interior
+
+| # | Point | Verdict |
+|---|---|---|
+| 1 | Flat linework | Pass |
+| 2 | Alone in frame | Pass |
+| 3 | No drawn-in words | Pass — the framed items on the wall (poster, papers) render as blank rectangular outlines, no lettering; the door plaques are blank plaques |
+| 4 | Wide/medium: no facial features | Pass — the entering figure is small and distant per the wide-shot framing; hair silhouette only, no facial marks |
+| 5 | N/A (wide) | — |
+| 6 | Reads as the beat's action/room | Pass — a drab one-room apartment, a stained mattress nailed to the wall as a punching bag, a radiator, a single bed, matching the beat's description closely |
+
+### s4b4 — close-up, the Woman's tired retort (trolley scene, second reading of the facial clause on a different face)
+
+| # | Point | Verdict |
+|---|---|---|
+| 1 | Flat linework | Pass |
+| 2 | Alone in frame | Pass |
+| 3 | No drawn-in words | Pass |
+| 4 | N/A (close-up) | — |
+| 5 | Brow/mouth/nose only, eyes blank | Pass — one continuous brow line (drawn as a single line that dips toward centre, reading as a furrowed brow rather than two separate eyebrows over two eyes), one short nose line, one mouth line (parted, mid-retort). No eye-shaped mark, no iris, no pupil anywhere in the blank plane between brow and nose. Confirms the v3 close-up clause holds on a second, different face and gender presentation, not only the male faces sampled in 04-02's required five |
+| 6 | Reads as the beat's action/room | Pass — a woman mid-speech in a trolley-car interior (window frame, overhead strap visible), consistent with "gives a tired, unyielding retort" |
+
+### Line-weight comparison against `s2b18`
+
+`s2b18` (scene 2, reopened for this pass) and all four second-pass samples share the same even, unshaded, single-weight outline; no panel among the five shows fill, cross-hatching, gradient, or a heavier/lighter line anywhere else in the batch. The house style established in 04-02 held across the other 30 beats without drift.
+
+### Second-pass summary
+
+3 of 4 sampled panels (`s3b7`, `s8b1`, `s4b4`) read cleanly against all applicable six points. `s5b4` carries one confirmed, retry-surviving defect (D-12 lettering leak on location signage) — logged to WINDOWS.md, not chased further per the plan's explicit instruction not to spend further passes on the facial or lettering clauses. No new facial-rule violations found outside scene 2's already-logged two-figure close-up and crowd exceptions (#6, #7 remain scene-2-specific in the ledger; this pass adds no facial-rule entry). `output/beats.json` unmodified; all 30 new panels plus the 19 reused scene-2 panels are on disk and in S3.
