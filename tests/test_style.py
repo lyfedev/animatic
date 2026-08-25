@@ -149,3 +149,58 @@ def test_describe_slot_falls_back_to_name_when_no_beats_match():
     slot = Slot(slot_id="int_hall", slot_type="location", display_name="HALLWAY")
     slot.beat_ids = ["missing"]
     assert describe_slot(slot, {"beats": []}) == "hallway"
+
+
+# ---------------------------------------------------------------------------
+# Character world context — derived from the scenes a character appears in
+# ---------------------------------------------------------------------------
+
+def test_character_context_comes_from_the_locations_of_their_scenes():
+    """A character's world is the location of the scenes they appear in.
+
+    A bare name is ambiguous about the film: "BLACK FIGHTER" generated a
+    soldier in a beret and tactical vest. Nothing here names a genre or a
+    character — the same code yields a different world for a different script.
+    """
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import character_context
+
+    char = Slot(slot_id="black_fighter", slot_type="character",
+                display_name="BLACK FIGHTER")
+    char.beat_ids = ["s2b2"]
+    loc = Slot(slot_id="int_club", slot_type="location", display_name="INT. CLUB")
+    loc.source_scenes = [2]
+    loc.beat_ids = ["s2b2"]
+    beats = {"beats": [
+        {"beat_id": "s2b2", "scene": 2,
+         "content": "A tiny boxing ring under dim overhead lights."},
+    ]}
+    out = character_context(char, [char, loc], beats)
+    assert "boxing ring" in out
+
+
+def test_character_context_never_carries_the_location_name():
+    """Passing the location's proper name hand-lettered it onto a sign."""
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import character_context
+
+    char = Slot(slot_id="fighter", slot_type="character", display_name="FIGHTER")
+    char.beat_ids = ["s2b1"]
+    loc = Slot(slot_id="int_blue_door_fight_club", slot_type="location",
+               display_name="INT. BLUE DOOR FIGHT CLUB - NIGHT")
+    loc.source_scenes = [2]
+    loc.beat_ids = ["s2b1"]
+    beats = {"beats": [
+        {"beat_id": "s2b1", "scene": 2, "content": "A ring under dim lights."},
+    ]}
+    out = character_context(char, [char, loc], beats)
+    assert "blue door" not in out.lower()
+
+
+def test_character_context_is_empty_when_no_location_matches():
+    from animatic.core.slot_resolver import Slot
+    from animatic.core.style import character_context
+
+    char = Slot(slot_id="ghost", slot_type="character", display_name="GHOST")
+    char.beat_ids = ["nope"]
+    assert character_context(char, [char], {"beats": []}) == ""

@@ -55,6 +55,8 @@ _QUOTED_RE = re.compile(r"[\"\u201c\u2018']([^\"\u201d\u2019']{2,60})[\"\u201d\u
 # How many of a slot's beats are summarised into its subject clause. Enough to
 # characterise the space, few enough to stay a description rather than a plot.
 _MAX_DESCRIPTION_BEATS = 3
+# Context is a hint about wardrobe and bearing, not a second scene description.
+_MAX_CONTEXT_CHARS = 240
 
 STYLE_BLOCK = (
     "Style: a single flat illustration drawn in solid black ink outlines on "
@@ -101,6 +103,53 @@ def describe_slot(slot: Slot, beats: dict[str, Any]) -> str:
         return _strip_colour(slot.display_name).lower()
     joined = " ".join(lines[:_MAX_DESCRIPTION_BEATS])
     return _strip_colour(_strip_on_screen_text(joined)).rstrip(". ").lower()
+
+
+def character_context(slot: Slot, slots: list[Slot], beats: dict[str, Any]) -> str:
+    """Describe the world a character belongs to, from the scenes they appear in.
+
+    A character slot generates from its name alone, and a bare name is
+    ambiguous in a way that shows: "BLACK FIGHTER" produced a soldier in a
+    beret and tactical vest, and "WOMAN" produced a woman who could be going
+    anywhere. Neither is wrong about the word — both are wrong about the film.
+
+    A character's world is the union of the locations whose scenes they appear
+    in, and those locations are already described from their own beats. So the
+    context is derived, never authored: nothing here names a genre, a period or
+    a character, and the same code produces "a boxing gym at night" for one
+    script and "a submarine galley" for another.
+
+    Two rules learned by generating this wrong first:
+
+    - Pass the location's *qualities*, never its proper name. Feeding the name
+      through put "BLUE DOOR FIGHT CLUB" on a hand-lettered sign in the frame.
+    - Context describes wardrobe and bearing, not staging. The first version
+      put the figure inside the room, which is useless as an asset — a slot's
+      art has to composite into any panel.
+    """
+    wanted = set(slot.beat_ids or [])
+    scenes = sorted({
+        b["scene"] for b in beats.get("beats", [])
+        if b.get("beat_id") in wanted
+    })
+    by_scene: dict[int, Slot] = {}
+    for s in slots:
+        if s.slot_type != "location":
+            continue
+        for scene in (s.source_scenes or []):
+            by_scene.setdefault(scene, s)
+
+    seen: list[Slot] = []
+    for scene in scenes:
+        loc = by_scene.get(scene)
+        if loc is not None and loc not in seen:
+            seen.append(loc)
+    if not seen:
+        return ""
+
+    # Deliberately the location's description, not its display_name.
+    detail = describe_slot(seen[0], beats)
+    return _strip_on_screen_text(detail)[:_MAX_CONTEXT_CHARS]
 
 
 def _strip_colour(text: str) -> str:
