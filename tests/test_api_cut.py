@@ -54,6 +54,24 @@ class TestShell:
         assert client.get("/static/app.css").status_code == 200
         assert client.get("/static/app.js").status_code == 200
 
+    def test_the_page_uses_relative_urls_so_it_works_behind_a_subpath(self, client):
+        """The demo is also served at vockell.com/animatic via a reverse proxy.
+
+        An absolute "/static/app.css" would ask the HOST for a file it does not
+        have. Relative paths resolve against the page, so the same HTML works
+        at "/" and at "/animatic/" with no rewriting and no build step.
+        """
+        body = client.get("/").text
+        assert 'href="static/app.css"' in body
+        assert 'src="static/app.js"' in body
+        assert 'href="/static/' not in body
+        assert 'src="/static/' not in body
+
+    def test_the_client_script_never_roots_a_fetch_at_slash(self, client):
+        script = client.get("/static/app.js").text
+        for absolute in ('fetch("/api', "fetch(`/api", 'fetch("/beats', "(`/api/"):
+            assert absolute not in script, absolute
+
     def test_health_still_answers(self, client):
         assert client.get("/health").status_code == 200
 
