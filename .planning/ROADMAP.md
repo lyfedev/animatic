@@ -302,6 +302,9 @@ change a character or a room, there is no reason to build an interface for it.
   the `int_blue_door_fight_club` location plate plus a prompt returned one composed panel
   carrying the character's build and clothing and the room's ring, benches, chairs and
   fittings. Evidence: `output/experiments/refcond_panel.jpg`.
+  **HELD 2026-08-24 — do not build into Phase 4 yet.** The capability is proven and the
+  risk is closed, but reference-image conditioning is not being adopted as Phase 4's
+  generation path for now. Phase 4 generates panels without it unless that is revisited.
   **This validates the Phase 3 asset architecture** — characters isolated on white and
   locations with no people are a vocabulary that genuinely combines, not two disconnected
   outputs. Phase 4 should generate each panel by conditioning on the slot plates its beat
