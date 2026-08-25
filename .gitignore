@@ -60,3 +60,7 @@ assets/Rocky.mp4
 
 # Agent worktrees (transient, never committed)
 .claude/worktrees/
+
+# Supplied real footage (large, and licensed material)
+assets/footage/
+output/video/

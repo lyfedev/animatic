@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-current_phase: 5
-current_phase_name: Audio Synthesis
-status: ready_to_plan
-stopped_at: Phases 3 and 4 verified and closed (each 1 accepted override). Phase 5 not yet planned.
-last_updated: "2026-08-25T11:12:08Z"
+current_phase: 7
+current_phase_name: Video Assembly
+status: in_progress
+stopped_at: Phase 7 built and the cut is watchable. Phase 6 (motion) deferred behind it. Phase 7 verification not yet run.
+last_updated: "2026-08-25T12:40:00Z"
 state_head: b8170b48296933be829f4c0a03aa161af5bb4869
 progress:
   total_phases: 10
-  completed_phases: 4
+  completed_phases: 6
   total_plans: 8
   completed_plans: 8
-  percent: 40
+  percent: 60
 ---
 
 # Animatic — STATE.md
@@ -19,7 +19,7 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 5 — Audio Synthesis, not yet planned. Phases 3 and 4 are closed: both verified `passed`, each carrying one explicit developer override (Phase 3: reference art held unexercised; Phase 4: 8 named facial/lettering exception beats).
+- **Phase:** 7 complete — the cut exists and is watchable. Phase 6 (motion) deliberately deferred behind it: motion covers 4 beats of 49, the cut is the deliverable, and Phase 4's accepted art defects can only be judged in motion. Phase 5 done. Phases 3 and 4 are closed: both verified `passed`, each carrying one explicit developer override (Phase 3: reference art held unexercised; Phase 4: 8 named facial/lettering exception beats).
 - **Active work:** None
 - **Carried into Phase 5+:** 8 WINDOWS.md panel defects, re-evaluated at Phase 7 in the assembled cut rather than as stills
 - **Last updated:** 2026-08-25
@@ -35,9 +35,9 @@ progress:
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
 | 3 | Asset Management & Manifest | ✅ Complete, 1 override | [03-VERIFICATION.md](phases/phase-3/03-VERIFICATION.md) — 7/7, reference art held unexercised |
 | 4 | Panel Generation | ✅ Complete, 1 override | [04-VERIFICATION.md](phases/phase-4/04-VERIFICATION.md) — 5/5, 41/49 panels clean, 8 named exceptions |
-| 5 | Audio Synthesis | ⬜ Not started | — |
-| 6 | Motion Generation | ⬜ Not started | — |
-| 7 | Video Assembly | ⬜ Not started | — |
+| 5 | Audio Synthesis | ✅ Complete, 14 clips stale | [Audio Contract](STATE.md) — 49 clips, 0 failed, 2 music cues |
+| 6 | Motion Generation | ⬜ Not started (deferred behind 7) | — |
+| 7 | Video Assembly | ✅ Complete | [Cut Contract](STATE.md) — 49 shots, 262.1s, swap seam proven live |
 
 ### Milestone 2 — Box Office (footage replacement + external-facing demo)
 
@@ -586,6 +586,59 @@ which 10 carry v1 audio. Criterion 5 holds across all 49. Clearing the stale set
 
 **`--scene`/`--only` narrow generation, never the index** — the whole-index rule, inherited from
 Phase 4 and tested here.
+
+## Phase 7 — Cut Contract
+
+What Phases 6, 8 and 9 read. The last of the four contracts.
+
+**Where it lives.** `output/video/animatic.mp4` and `output/video/index.json` locally,
+`video/` in the media bucket. The manifest records `cut_sha256`, `planned_secs` (sum of
+`shot_secs`) and `measured_secs` (probed from the finished file), so a cut can always be tied
+to the shots it claims.
+
+**Cut on `shot_secs` from the audio index — never `duration_secs` from the beat.** This is the
+rule the phase turns on. Phase 2 planned durations from page geometry; Phase 5 measured the
+audio and widened the shots that could not hold their own speech. Using the beat's number would
+clip five shots in the current corpus. A beat with no audio entry falls back to its planned
+duration and records `shot_secs_source: beat_duration` saying so. A `shot_secs` of 0 (a failed
+clip) is not trusted — it would drop the beat out of the cut entirely.
+
+**The shot-source seam is how Phases 6 and 8 both work.** `shot_sources.resolve_shot` picks the
+highest-priority file that exists for a beat: real footage (`assets/footage/`), then motion
+(`output/motion/`), then the still panel (`output/panels/`). Nothing else needs to change for
+either phase — Phase 6 writes motion clips into its directory and Phase 8 accepts footage into
+its own. **Proven live 2026-08-25**: dropping `s2b2.mp4` into `assets/footage/` put 8.8s of the
+real film into the cut (`real_footage_pct` 3.4%), and deleting it restored the panel — FR-07 and
+Phase 8's criterion 4, working two phases early.
+
+**Beat number comes from the FILENAME, never from the footage** (PROJECT.md non-goal).
+`s2b2.mp4` and `s2b2-take3.mp4` both match; `s2b50.mp4` and `rocky_fight_final.mp4` do not. Two
+takes for the same beat resolve on sorted name so the cut is reproducible.
+
+**Real footage keeps the cut's audio, not its own.** The extracted clip is muxed silent and the
+beat's synthesised narration or dialogue plays over it, so the audio bed stays continuous across
+a swap. Revisit if a swapped shot should carry production sound.
+
+**A clip is never re-timed to fit its shot.** Motion shorter than its shot holds its last frame
+(`tpad=stop_mode=clone`); longer is trimmed. Speeding or slowing would misrepresent the motion
+that was generated. The audio sets the length because the audio is what a viewer notices.
+
+**Frame: 1280x720, 24fps, white pad.** Panels are 1376x768, so the cut scales down and pads
+rather than distorting. The pad is **white** — the house style is black line art on white, and
+black bars around a white frame read as a rendering fault rather than a letterbox.
+
+**`real_footage_pct` is by SCREEN TIME, not shot count** (FR-08). One 12-second replaced shot is
+more of the cut than three 2-second ones.
+
+**Audio warnings ride along.** `stale_audio_beat_ids` and `text_mismatch_beat_ids` are copied
+from the audio index onto the cut manifest, so a reader need not open two files to learn the cut
+contains stale or mislabelled audio. **Phase 9 must not caption from `text` for the mismatch
+set.**
+
+**Current cut (2026-08-25):** 49 shots, scenes 1-8, 262.1s measured against 261.77s planned
+(6.7ms per shot, sub-frame rounding at 24fps). 0 shots clip their audio. Two renders exist —
+`animatic.mp4` (all panels) and `animatic-partial.mp4` (one real shot). The third required by
+the Definition of Done, all-footage, needs footage for all 49 beats.
 
 ## Deadline
 
