@@ -77,8 +77,14 @@ def generate_missing_art(
     previous_manifest: dict[str, Any] | None = None,
     force: bool = False,
     on_progress: ProgressCallback | None = None,
+    only: set[str] | None = None,
 ) -> None:
     """Generate art for every slot not already resolved to reference art.
+
+    `only` restricts which slot_ids are (re)generated. Every other slot is
+    left exactly as it is and still reaches the manifest — a partial run
+    narrows the generation, never the slot list, because narrowing the list
+    wrote a one-entry manifest over the full sixteen and orphaned the art.
 
     Groups slots by `art_slot_id` (minor characters share one) and iterates
     the distinct groups in `priority_rank` order (D-10/D-11), so budget and
@@ -110,6 +116,11 @@ def generate_missing_art(
     groups: dict[str, list[Slot]] = {}
     for slot in slots:
         if slot.source == "reference":
+            continue
+        if only is not None and slot.slot_id not in only:
+            # Not selected for this run: left untouched, and still manifested
+            # by the caller. Skipping generation is not the same as dropping
+            # the slot.
             continue
         art_id = slot.art_slot_id or slot.slot_id
         groups.setdefault(art_id, []).append(slot)

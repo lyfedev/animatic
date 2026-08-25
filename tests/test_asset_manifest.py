@@ -640,3 +640,41 @@ def test_reference_file_appearing_flips_source_and_marks_stale():
 
     assert second["stale_beat_ids"] == ["s1b1"]
     assert second["slots"][0]["art_changed"] is True
+
+
+def test_partial_run_still_manifests_every_slot(tmp_path, monkeypatch):
+    """--only narrows what is GENERATED, never what is manifested.
+
+    Regression guard: narrowing the slot list and letting build_manifest run
+    over the remainder wrote a one-entry manifest over the full sixteen —
+    locally and in S3 — leaving thirteen art files on disk and unreferenced.
+    Phase 4 reads that manifest to know which slots a panel depends on.
+    """
+    from animatic.core.asset_generator import generate_missing_art
+    from animatic.core.slot_resolver import resolve_slots
+
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+    assert len(slots) == 16
+
+    calls: list[str] = []
+
+    def _fake(slot, prompt):
+        calls.append(slot.slot_id)
+        return b"\xff\xd8fake", "image/jpeg"
+
+    monkeypatch.setattr("animatic.core.asset_generator.generate_slot_art", _fake)
+    # write_slot_art is imported inside generate_missing_art, so patch it at
+    # its definition site rather than on the calling module.
+    monkeypatch.setattr(
+        "animatic.core.asset_manifest.write_slot_art",
+        lambda slot, data, mime: setattr(slot, "art_uri", f"out/{slot.slot_id}.jpg"),
+    )
+
+    generate_missing_art(slots, beats, force=True, only={"int_dressing_room"})
+
+    assert calls == ["int_dressing_room"], "only the selected slot regenerates"
+    assert len(slots) == 16, "every other slot survives for the manifest"
+
+    manifest = build_manifest(slots, beats, beats_source=str(BEATS_PATH))
+    assert len(manifest["slots"]) == 16

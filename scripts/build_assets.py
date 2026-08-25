@@ -98,16 +98,24 @@ def main() -> None:
             f"{slot.share_pct}% share)"
         )
 
+    # A partial run regenerates ONE slot but must still write a whole
+    # manifest. Narrowing `slots` here and letting build_manifest run over the
+    # remainder wrote a one-entry manifest over the full sixteen — locally and
+    # in S3 — leaving every other slot's art on disk but unreferenced. The
+    # untouched slots stay in the list and are simply not regenerated.
+    regenerate_only: set[str] | None = None
     if args.only:
-        matched = [s for s in slots if s.slot_id == args.only]
-        if not matched:
+        if args.only not in {s.slot_id for s in slots}:
             print(
                 f"Error: no slot named {args.only!r} among {[s.slot_id for s in slots]}",
                 file=sys.stderr,
             )
             sys.exit(1)
-        slots = matched
-        print(f"          --only {args.only!r}: generating 1 slot")
+        regenerate_only = {args.only}
+        print(
+            f"          --only {args.only!r}: regenerating 1 slot, "
+            f"carrying the other {len(slots) - 1} through unchanged"
+        )
 
     print("\nStep 2/4  Ingesting reference art...")
     scan = resolve_reference_art(slots, reference_dir)
@@ -139,7 +147,7 @@ def main() -> None:
 
         generate_missing_art(
             slots, beats, previous_manifest=previous_manifest,
-            force=args.force, on_progress=_progress,
+            force=args.force, on_progress=_progress, only=regenerate_only,
         )
 
     print("\nStep 4/4  Writing manifest...")
