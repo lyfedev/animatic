@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from animatic.core.s3_writer import put_bytes
+from animatic.core.script_source import script_id
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ def build_index(
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "script": "rocky-1976",
+        "script": script_id(),
         "cut_template_version": cut_template_version,
         "beats_generated_at": beats_doc.get("generated_at", ""),
         "audio_generated_at": audio_index.get("generated_at", ""),

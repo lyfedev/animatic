@@ -27,6 +27,7 @@ from typing import Any
 
 from animatic.core.s3_writer import put_bytes
 from animatic.core.shot_sources import MissingShotError, resolve_shot
+from animatic.core.script_source import script_id
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ def _totals(
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "state_version": STATE_VERSION,
-        "script": "rocky-1976",
+        "script": script_id(),
         "total_shots": len(ordered),
         "shots_by_state": by_state,
         "total_secs": total_secs,

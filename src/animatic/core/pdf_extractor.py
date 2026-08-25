@@ -1,4 +1,4 @@
-"""PDF text extractor — splits Rocky screenplay into scenes by INT/EXT headings."""
+"""PDF text extractor — splits a screenplay into scenes by numbered heading."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from itertools import islice
 from pathlib import Path
 
 import pdfplumber
+from animatic.core.script_source import resolve_scene_count
 
 # Matches a numbered screenplay scene heading. The scene number appears at
 # BOTH ends of the line, which is what makes this safe to match loosely:
@@ -25,7 +26,7 @@ _HEADING_RE = re.compile(
 
 def extract_scenes(
     pdf_path: str | Path,
-    first_n: int = 8,
+    first_n: int | None = None,
 ) -> dict[int, str]:
     """Extract raw text for the first N scenes from a screenplay PDF.
 
@@ -44,6 +45,7 @@ def extract_scenes(
         dict mapping scene_number → raw scene text (heading included),
         in order of appearance.
     """
+    first_n = resolve_scene_count(first_n)
     pdf_path = Path(pdf_path)
     full_text = _extract_full_text(pdf_path)
     scene_map = _split_by_scene(full_text)

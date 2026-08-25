@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import pdfplumber
+from animatic.core.script_source import resolve_scene_count
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ def secs_for_lines(lines: int) -> float:
     return round(lines / LINES_PER_PAGE * PAGE_SECS, 1)
 
 
-def scene_line_counts(pdf_path: str | Path, first_n: int = 8) -> dict[int, int]:
+def scene_line_counts(
+    pdf_path: str | Path, first_n: int | None = None
+) -> dict[int, int]:
     """Line count per scene, blanks included, for the first N scenes.
 
     A scene spans from its heading line to the next scene's heading, so it
@@ -53,6 +56,7 @@ def scene_line_counts(pdf_path: str | Path, first_n: int = 8) -> dict[int, int]:
     Returns:
         dict mapping scene_number → line count (heading and blanks included).
     """
+    first_n = resolve_scene_count(first_n)
     with pdfplumber.open(Path(pdf_path)) as pdf:
         pages = [page.extract_text_lines() for page in pdf.pages]
 
@@ -78,7 +82,9 @@ def scene_line_counts(pdf_path: str | Path, first_n: int = 8) -> dict[int, int]:
     return counts
 
 
-def scene_targets(pdf_path: str | Path, first_n: int = 8) -> dict[int, float]:
+def scene_targets(
+    pdf_path: str | Path, first_n: int | None = None
+) -> dict[int, float]:
     """Target screen time in seconds per scene, from page geometry."""
     return {
         scene: secs_for_lines(lines)

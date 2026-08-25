@@ -10,6 +10,7 @@ from typing import Any
 
 from animatic.core.beat_extractor import Beat
 from animatic.core.s3_writer import put_bytes
+from animatic.core.script_source import script_id
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def _build_beat_list(scenes_beats: dict[int, list[Beat]]) -> dict[str, Any]:
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "script": "rocky-1976",
+        "script": script_id(),
         "scenes": sorted(scenes_beats.keys()),
         "total_beats": len(all_beats),
         "total_duration_secs": round(total_duration, 1),

@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from animatic.core.pdf_extractor import extract_scenes
+from animatic.core.script_source import resolve_scene_count
 
 # Sound sources a screenplay names when it wants music. Matched on the scene
 # text, so "listens to a portable RADIO that is BLASTING MUSIC" and "places an
@@ -77,10 +78,10 @@ class MusicCue:
 def find_music_cues(
     pdf_path: str | Path,
     beats: list[dict[str, Any]],
-    first_n: int = 8,
+    first_n: int | None = None,
 ) -> list[MusicCue]:
     """Music cues in the script, each mapped to the beats that carry it."""
-    scenes = extract_scenes(pdf_path, first_n=first_n)
+    scenes = extract_scenes(pdf_path, first_n=resolve_scene_count(first_n))
 
     cues: list[MusicCue] = []
     for scene_num, text in scenes.items():

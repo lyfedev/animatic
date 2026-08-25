@@ -31,6 +31,7 @@ from typing import Any
 from animatic.config import settings
 from animatic.core.s3_writer import put_bytes
 from animatic.core.slot_resolver import Slot
+from animatic.core.script_source import script_id
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def build_manifest(
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "script": "rocky-1976",
+        "script": script_id(),
         "beats_source": beats_source,
         "beats_generated_at": beats.get("generated_at", ""),
         "total_slots": len(slots),
