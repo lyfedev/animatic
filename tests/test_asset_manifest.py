@@ -13,7 +13,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from animatic.core.asset_generator import AssetGenerationError, generate_slot_art
+from animatic.core.asset_generator import (
+    AssetGenerationError,
+    generate_missing_art,
+    generate_slot_art,
+)
 from animatic.core.asset_manifest import build_manifest, write_manifest, write_slot_art
 from animatic.core.reference_art import content_hash_file, resolve_reference_art
 from animatic.core.slot_resolver import Slot, resolve_slots
@@ -289,3 +293,172 @@ def test_content_hash_changes_on_file_replace(tmp_path):
     hash2 = content_hash_file(path)
 
     assert hash1 != hash2
+
+
+# ---------------------------------------------------------------------------
+# asset_generator.generate_missing_art — Task 2
+# ---------------------------------------------------------------------------
+
+def _patch_local_dirs(monkeypatch, tmp_path):
+    import animatic.core.asset_manifest as asset_manifest_mod
+
+    monkeypatch.setattr(asset_manifest_mod, "_LOCAL_MANIFEST", tmp_path / "manifest.json")
+    monkeypatch.setattr(asset_manifest_mod, "_LOCAL_GENERATED_DIR", tmp_path / "generated")
+
+
+@patch("animatic.core.asset_manifest.boto3.Session")
+@patch("animatic.core.asset_generator.genai.Client")
+def test_manifest_complete_with_no_reference_art(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """With reference art absent, all 16 slots end with a non-empty art_uri
+    and source "generated"; the run produces 13 distinct art files (7
+    locations, 5 bespoke characters, 1 generic_minor_character)."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    generate_missing_art(slots, beats)
+
+    assert len(slots) == 16
+    assert all(s.art_uri for s in slots)
+    assert all(s.source == "generated" for s in slots)
+    assert all(s.prompt for s in slots)
+    assert len({s.art_uri for s in slots}) == 13
+
+
+@patch("animatic.core.asset_manifest.boto3.Session")
+@patch("animatic.core.asset_generator.genai.Client")
+def test_minor_characters_share_one_art_file(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """The four minor characters share one art file and one content_hash."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    generate_missing_art(slots, beats)
+
+    minors = [s for s in slots if s.is_minor]
+    assert len(minors) == 4
+    assert len({s.art_uri for s in minors}) == 1
+    assert len({s.content_hash for s in minors}) == 1
+
+
+@patch("animatic.core.asset_manifest.boto3.Session")
+@patch("animatic.core.asset_generator.genai.Client")
+def test_generation_order_follows_priority(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """Slots are generated in priority_rank order, highest-share first."""
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    low = Slot(slot_id="ext_alley", slot_type="location", display_name="EXT. ALLEY")
+    low.priority_rank, low.art_slot_id, low.beat_ids = 3, "ext_alley", []
+    high = Slot(slot_id="int_ring", slot_type="location", display_name="INT. RING")
+    high.priority_rank, high.art_slot_id, high.beat_ids = 1, "int_ring", []
+    mid = Slot(slot_id="rocky", slot_type="character", display_name="ROCKY")
+    mid.priority_rank, mid.art_slot_id, mid.is_minor, mid.beat_ids = 2, "rocky", False, []
+
+    slots = [low, mid, high]
+    generate_missing_art(slots, {"beats": []})
+
+    called_prompts = [
+        c.kwargs["contents"] for c in mock_client.models.generate_content.call_args_list
+    ]
+    assert called_prompts == [high.prompt, mid.prompt, low.prompt]
+
+
+@patch("animatic.core.asset_manifest.boto3.Session")
+@patch("animatic.core.asset_generator.genai.Client")
+def test_existing_art_is_reused_without_a_second_call(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """A generated file that already exists on disk with the same prompt is
+    reused rather than regenerated, unless --force is passed."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = _mock_image_response()
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    generate_missing_art(slots, beats)
+    first_call_count = mock_client.models.generate_content.call_count
+    assert first_call_count == 13
+
+    previous_manifest = {"slots": [s.to_dict() for s in slots]}
+    slots2 = resolve_slots(beats, PDF_PATH)
+    generate_missing_art(slots2, beats, previous_manifest=previous_manifest)
+
+    assert mock_client.models.generate_content.call_count == first_call_count
+
+    by_id_1 = {s.slot_id: s for s in slots}
+    by_id_2 = {s.slot_id: s for s in slots2}
+    for slot_id, s1 in by_id_1.items():
+        s2 = by_id_2[slot_id]
+        assert s2.content_hash == s1.content_hash
+        assert s2.source == "generated"
+
+
+@patch("animatic.core.asset_manifest.boto3.Session")
+@patch("animatic.core.asset_generator.genai.Client")
+def test_one_slot_failure_does_not_abort_the_run(
+    mock_client_cls, mock_session_cls, tmp_path, monkeypatch
+):
+    """A failure on one slot records the error in that slot's reason and
+    leaves the other slots complete — the run does not abort."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    call_count = {"n": 0}
+
+    def side_effect(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            raise RuntimeError("simulated API failure")
+        return _mock_image_response()
+
+    mock_client.models.generate_content.side_effect = side_effect
+    mock_session = MagicMock()
+    mock_session.client.return_value = MagicMock()
+    mock_session_cls.return_value = mock_session
+    _patch_local_dirs(monkeypatch, tmp_path)
+
+    generate_missing_art(slots, beats)
+
+    # rocky is priority_rank 1 and its own art_slot_id, so it is the only
+    # slot in the first (failing) group.
+    failed = [s for s in slots if s.source == "generation_failed"]
+    succeeded = [s for s in slots if s.source == "generated"]
+    assert len(failed) == 1
+    assert failed[0].slot_id == "rocky"
+    assert failed[0].source_reason
+    assert "simulated API failure" in failed[0].source_reason
+    assert len(succeeded) == 15
