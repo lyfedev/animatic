@@ -258,3 +258,137 @@ video {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---- steering: budget, characters, editor, dailies ---- */
+
+.tag-free { background: var(--live-soft); color: var(--live); }
+
+.budget { display: grid; gap: 8px; }
+@media (min-width: 620px) { .budget { grid-template-columns: repeat(3, 1fr); } }
+.budget-model {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--paper);
+}
+.budget-model h3 {
+  margin: 0 0 6px;
+  font: 600 0.72rem/1 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.budget-count {
+  font: 700 1.5rem/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.budget-count.is-low { color: var(--accent); }
+.budget-of { color: var(--ink-faint); font-size: 0.85rem; }
+.budget-note {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  border-left: 2px solid var(--rule);
+  padding-left: 11px;
+}
+
+.rows { display: grid; gap: 7px; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  background: var(--paper);
+}
+.row-name { font-weight: 600; min-width: 9em; }
+.row-meta { color: var(--ink-faint); font-size: 0.85rem; }
+.row-cost {
+  margin-left: auto;
+  font: 600 0.78rem/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.row-cost.is-free { background: var(--live-soft); color: var(--live); }
+.row select, .row input[type="text"], .row input[type="number"] {
+  font: 0.85rem var(--sans);
+  padding: 6px 9px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+.btn-sm {
+  font: 600 0.78rem var(--sans);
+  padding: 6px 12px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn-sm:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-danger { border-color: var(--accent); color: var(--accent); }
+.btn-danger:hover:not(:disabled) { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+
+.editor { display: grid; gap: 14px; }
+.editor .empty { color: var(--ink-faint); margin: 0; }
+.editor-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.editor-head img {
+  width: 190px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  display: block;
+}
+.editor-field { display: grid; gap: 7px; }
+.editor-field label { font-weight: 600; font-size: 0.88rem; }
+.editor-field .hint { color: var(--ink-faint); font-size: 0.82rem; margin: 0; }
+.editor-field textarea {
+  font: 0.9rem/1.5 var(--sans);
+  padding: 9px 11px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+  min-height: 68px;
+}
+.editor-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+.rewrite {
+  margin: 0;
+  font: 0.8rem/1.6 var(--mono);
+  color: var(--ink-faint);
+  border-left: 2px solid var(--accent);
+  padding-left: 11px;
+}
+
+.daily-form {
+  display: flex;
+  gap: 11px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.daily-form label { display: grid; gap: 5px; font-size: 0.85rem; font-weight: 600; }
+.daily-form input[type="text"] {
+  font: 0.9rem var(--mono);
+  padding: 7px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  width: 7em;
+}
+.daily-form .file input { font-size: 0.8rem; }
+.shot.is-selected { outline: 2px solid var(--ink); outline-offset: 2px; }
+.shot.state-animatic_edited { border-color: var(--ink); border-width: 2px; }
+.state-animatic_edited .shot-badge { background: var(--ink); }
+.shot.state-daily { border-color: var(--accent); border-width: 2px; }
+.state-daily .shot-badge { background: var(--accent); }

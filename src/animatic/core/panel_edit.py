@@ -49,19 +49,19 @@ _BEAT_ID_RE = re.compile(r"^s\d+b\d+$")
 # HOLDS; none of them names the thing being removed a second time.
 _POSITIVE_FOR_NEGATION: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bno other (?:people|figures|characters|persons)\b", re.I),
-     "one lone figure occupying the frame"),
+     "one lone figure occupies the frame"),
     (re.compile(r"\b(?:with )?no one else\b", re.I),
-     "one lone figure occupying the frame"),
-    (re.compile(r"\bnobody else\b", re.I), "one lone figure occupying the frame"),
-    (re.compile(r"\balone\b", re.I), "one lone figure occupying the frame"),
-    (re.compile(r"\bempty\b", re.I), "bare and unoccupied"),
+     "one lone figure occupies the frame"),
+    (re.compile(r"\bnobody else\b", re.I), "one lone figure occupies the frame"),
+    (re.compile(r"\balone\b", re.I), "one lone figure occupies the frame"),
+    (re.compile(r"\bempty\b", re.I), "the room stands bare and unoccupied"),
     (re.compile(r"\b(?:remove|delete|erase|get rid of|take out)\s+(?:the\s+)?([\w\s'-]{1,40})",
                 re.I),
-     "the space where {0} was is now plain, blank background"),
+     "the space where {0} stood is now plain, blank background"),
     (re.compile(r"\bwithout (?:any |the |a )?([\w\s'-]{1,40})", re.I),
-     "the space where {0} was is now plain, blank background"),
+     "the space where {0} stood is now plain, blank background"),
     (re.compile(r"\bno more (?:than )?([\w\s'-]{1,40})", re.I),
-     "the space where {0} was is now plain, blank background"),
+     "the space where {0} stood is now plain, blank background"),
 )
 
 
@@ -70,23 +70,42 @@ class PanelEditError(Exception):
 
 
 def rewrite_negations(instruction: str) -> tuple[str, list[str]]:
-    """Turn "no other people" into "one lone figure occupying the frame".
+    """Turn "no other people" into "one lone figure occupies the frame".
 
-    Returns (rewritten, notes). `notes` records each substitution so the UI can
-    show the developer what actually went to the model instead of what they
+    The positive statement is APPENDED as its own sentence rather than
+    substituted where the negation stood. Substituting in place produced
+    "singing into a hairbrush one lone figure occupying the frame in the room
+    setting" — which the model happened to understand, but a broken sentence
+    is worse guidance than a clear one and there is no reason to rely on it.
+
+    Duplicates are collapsed: "alone" and "no other people" in the same
+    instruction mean one thing, and saying it twice does not say it harder.
+
+    Returns (rewritten, notes). `notes` records every substitution so the UI
+    can show the developer what actually went to the model instead of what they
     typed — a rewrite they cannot see is a rewrite they cannot correct.
     """
     text = instruction
     notes: list[str] = []
+    positives: list[str] = []
 
     for pattern, replacement in _POSITIVE_FOR_NEGATION:
-        match = pattern.search(text)
-        if not match:
-            continue
-        subject = (match.group(1).strip() if match.groups() else "")
-        positive = replacement.format(subject) if "{0}" in replacement else replacement
-        notes.append(f"{match.group(0)!r} -> {positive!r}")
-        text = text[: match.start()] + positive + text[match.end() :]
+        while (match := pattern.search(text)) is not None:
+            subject = (match.group(1).strip() if match.groups() else "")
+            positive = (
+                replacement.format(subject) if "{0}" in replacement else replacement
+            )
+            notes.append(f"{match.group(0)!r} -> {positive!r}")
+            if positive not in positives:
+                positives.append(positive)
+            # Excise the negation rather than replacing it in place, so what
+            # remains is still a sentence.
+            text = text[: match.start()] + " " + text[match.end() :]
+
+    text = re.sub(r"\s{2,}", " ", text).strip().strip(".,;: ")
+    if positives:
+        tail = ". ".join(p[0].upper() + p[1:] for p in positives)
+        text = f"{text}. {tail}" if text else tail
 
     return re.sub(r"\s{2,}", " ", text).strip(), notes
 
