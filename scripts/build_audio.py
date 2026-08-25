@@ -26,6 +26,7 @@ from animatic.config import settings  # noqa: E402
 from animatic.core.audio_generator import generate_missing_audio  # noqa: E402
 from animatic.core.audio_timing import narration_budget_words  # noqa: E402
 from animatic.core.music_cues import build_music_prompt, find_music_cues  # noqa: E402
+from animatic.core.script_source import script_pdf  # noqa: E402
 
 
 def main() -> None:
@@ -42,8 +43,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--pdf",
-        default="docs/rocky-1976.pdf",
-        help="Path to the screenplay PDF, read for music cues",
+        default=None,
+        help="Path to the screenplay PDF (default: settings.script_pdf)",
     )
     parser.add_argument("--scene", type=int, default=None, help="Only this scene's beats")
     parser.add_argument("--only", default=None, help="Only this beat_id, e.g. s2b7")
@@ -73,6 +74,8 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if getattr(args, "pdf", None) is None:
+        args.pdf = str(script_pdf())
 
     if args.tts_model:
         settings.gemini_tts_model = args.tts_model

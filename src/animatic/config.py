@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     gemini_veo_model: str = "veo-3.1-fast-generate-preview"
     media_bucket: str = "animatic-media-628818"
 
+    # The screenplay this run is about. Read through `core.script_source`
+    # rather than directly, so the script id can be derived from the filename
+    # and nothing has to be told twice. Point `script_pdf` at another PDF and
+    # the whole pipeline follows — the generation was never Rocky-specific.
+    script_pdf: str = "docs/rocky-1976.pdf"
+    script_id: str = ""  # derived from the PDF filename when empty
+    scene_count: int = 8
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

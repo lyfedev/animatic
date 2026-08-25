@@ -12,11 +12,11 @@ from animatic.core.beat_assembler import assemble_and_write
 from animatic.core.beat_extractor import extract_beats
 from animatic.core.pdf_extractor import extract_scenes
 from animatic.core.scene_timing import scene_targets
+from animatic.core.script_source import script_pdf
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-_PDF_PATH = Path("docs/rocky-1976.pdf")
 
 
 class SceneSummary(BaseModel):
@@ -39,17 +39,21 @@ class BeatsParseResponse(BaseModel):
 
 @router.post("/beats/parse", response_model=BeatsParseResponse)
 async def parse_beats() -> BeatsParseResponse:
-    """Parse Rocky screenplay into a beat list.
+    """Parse the configured screenplay into a beat list.
 
     Executes live — beat parsing runs on every call (not cached).
     """
-    if not _PDF_PATH.exists():
-        raise HTTPException(status_code=500, detail=f"Screenplay PDF not found: {_PDF_PATH}")
+    pdf_path = script_pdf()
+    if not pdf_path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail=f"Screenplay PDF not found: {pdf_path}",
+        )
 
     logger.info("Starting beat parsing pipeline")
 
-    scenes = extract_scenes(_PDF_PATH, first_n=8)
-    targets = scene_targets(_PDF_PATH, first_n=8)
+    scenes = extract_scenes(pdf_path)
+    targets = scene_targets(pdf_path)
     scenes_beats: dict[int, list] = {}
     scene_summaries: list[SceneSummary] = []
 

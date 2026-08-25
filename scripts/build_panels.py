@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from animatic.core.panel_generator import generate_missing_panels
 from animatic.core.slot_resolver import resolve_slots
+from animatic.core.script_source import script_pdf  # noqa: E402
 
 _DEFAULT_INDEX_PATH = Path("output/panels/index.json")
 
@@ -38,8 +39,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--pdf",
-        default="docs/rocky-1976.pdf",
-        help="Path to the screenplay PDF (default: docs/rocky-1976.pdf)",
+        default=None,
+        help="Path to the screenplay PDF (default: settings.script_pdf)",
     )
     parser.add_argument(
         "--manifest",
@@ -68,6 +69,8 @@ def main() -> None:
         help="Resolve beats and slots without calling the image API",
     )
     args = parser.parse_args()
+    if getattr(args, "pdf", None) is None:
+        args.pdf = str(script_pdf())
 
     beats_path = Path(args.beats)
     pdf_path = Path(args.pdf)

@@ -22,6 +22,7 @@ from animatic.core.beat_assembler import assemble_and_write
 from animatic.core.beat_extractor import extract_beats
 from animatic.core.pdf_extractor import extract_scenes
 from animatic.core.scene_timing import scene_targets
+from animatic.core.script_source import script_pdf  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -30,8 +31,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Parse screenplay into beat list")
     parser.add_argument(
         "--pdf",
-        default="docs/rocky-1976.pdf",
-        help="Path to screenplay PDF (default: docs/rocky-1976.pdf)",
+        default=None,
+        help="Path to the screenplay PDF (default: settings.script_pdf)",
     )
     parser.add_argument(
         "--scenes",
@@ -40,6 +41,8 @@ def main() -> None:
         help="Number of scenes to parse from start (default: 8)",
     )
     args = parser.parse_args()
+    if getattr(args, "pdf", None) is None:
+        args.pdf = str(script_pdf())
 
     pdf_path = Path(args.pdf)
     if not pdf_path.exists():

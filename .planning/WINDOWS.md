@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 6
+open_count: 7
 waived_count: 0
 fixed_count: 4
-total_count: 10
-last_updated: 2026-08-25T09:51:31.059Z
+total_count: 11
+last_updated: 2026-08-25T20:15:00.000Z
 ---
 
 # Broken Windows Ledger
@@ -192,3 +192,32 @@ fail more often. Regeneration is a coin-flip against the same prompt rather than
 `scripts/build_panels.py --force --only <beat_id>` regenerates one panel; the cache leaves
 every other panel untouched. Gemini credits were exhausted during wave 3 and have since
 been topped up.
+
+
+## Technical debt — music cue detection is device-shaped (2026-08-25)
+
+**Open.** `music_cues._CUE_RE` matches playback DEVICES — radio, phonograph,
+jukebox, record player, 45 RPM — because those are the words Rocky's script
+uses. A script where a character plays an instrument registers no cue at all:
+"Rubble and floodlight. A zither plays from a doorway." returns zero cues, so
+ROADMAP Phase 5 criterion 4 ("music is generated where the script specifies a
+music cue") is satisfied for this script and not in general.
+
+Found while de-hardcoding the script identity, by running a synthetic
+non-Rocky screenplay through the real extractor — not by inspection.
+
+**Pinned, not hidden:** `tests/test_script_source.py::
+TestADifferentScriptActuallyParses::test_its_music_cue_is_found_in_its_own_words`
+is `xfail(strict=True)`. It fails today and the suite will fail if it ever
+starts passing without the reason being removed.
+
+**What fixing it needs.** Instruments (piano, zither, guitar, violin, horn,
+organ, drum), musical verbs (sings, singing, humming, whistling, plays),
+and screenplay caps convention (MUSIC, SINGING) — added WITHOUT picking up
+false positives, which is the whole difficulty: "plays with the ball", "a
+record of events", "he drums his fingers", "horn honks". The existing
+sentence-level matching helps, but this needs its own test corpus of
+positives and negatives rather than a bigger regex written blind.
+
+**Not urgent for the demo.** Rocky's two cues are detected correctly and the
+named-work guard is unaffected.
