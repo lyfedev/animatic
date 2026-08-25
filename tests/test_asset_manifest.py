@@ -15,11 +15,13 @@ import pytest
 
 from animatic.core.asset_generator import AssetGenerationError, generate_slot_art
 from animatic.core.asset_manifest import build_manifest, write_manifest, write_slot_art
+from animatic.core.reference_art import content_hash_file, resolve_reference_art
 from animatic.core.slot_resolver import Slot, resolve_slots
 from animatic.core.style import build_slot_prompt
 
 PDF_PATH = Path("docs/rocky-1976.pdf")
 BEATS_PATH = Path("output/beats.json")
+REFERENCE_DIR = Path("assets/reference-art")
 
 
 def _mock_image_response(data: bytes = b"fake-image-bytes", mime_type: str = "image/png"):
@@ -201,3 +203,89 @@ def test_build_manifest_shape(tmp_path):
     assert manifest["generated_at"]
     assert manifest["script"] == "rocky-1976"
     assert len(manifest["slots"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# reference_art — supplied art wins over generation (Task 1)
+# ---------------------------------------------------------------------------
+
+def test_reference_art_takes_priority():
+    """With the reference directory as supplied today, rocky resolves to
+    source "reference" with its three rocky-named files and never reaches
+    the image model; no other slot resolves to source "reference"."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    resolve_reference_art(slots, REFERENCE_DIR)
+
+    by_id = {s.slot_id: s for s in slots}
+    rocky = by_id["rocky"]
+    assert rocky.source == "reference"
+    assert rocky.match_rule == "filename_token"
+    assert len(rocky.source_files) == 3
+    assert all("rocky" in f.lower() for f in rocky.source_files)
+    assert rocky.source_reason
+
+    reference_backed = [s.slot_id for s in slots if s.source == "reference"]
+    assert reference_backed == ["rocky"]
+
+
+def test_unmatched_reference_file_is_recorded():
+    """boxing_poses.jpeg matches no slot_id and is recorded with a reason
+    rather than silently dropped (NFR-04)."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    scan = resolve_reference_art(slots, REFERENCE_DIR)
+
+    unmatched_names = [Path(u["path"]).name for u in scan.unmatched]
+    assert "boxing_poses.jpeg" in unmatched_names
+    matching = next(u for u in scan.unmatched if Path(u["path"]).name == "boxing_poses.jpeg")
+    assert matching["reason"]
+
+
+def test_slot_directory_beats_filename_token(tmp_path):
+    """A file under assets/reference-art/<slot_id>/ wins outright over a
+    flat file that would otherwise match the same slot on filename tokens."""
+    ref_dir = tmp_path / "reference-art"
+    (ref_dir / "rocky").mkdir(parents=True)
+    dir_file = ref_dir / "rocky" / "primary.jpg"
+    dir_file.write_bytes(b"dir-bytes")
+    flat_file = ref_dir / "rocky_extra.jpg"
+    flat_file.write_bytes(b"flat-bytes")
+
+    slots = [Slot(slot_id="rocky", slot_type="character", display_name="ROCKY")]
+    scan = resolve_reference_art(slots, ref_dir)
+
+    rocky = slots[0]
+    assert rocky.match_rule == "slot_directory"
+    assert rocky.source_files == [str(dir_file)]
+    assert scan.matched_slot_ids == ["rocky"]
+
+
+def test_empty_reference_dir_resolves_nothing(tmp_path):
+    """An empty reference directory resolves no slot and raises nothing."""
+    empty_dir = tmp_path / "reference-art"
+    empty_dir.mkdir()
+    slots = [Slot(slot_id="rocky", slot_type="character", display_name="ROCKY")]
+
+    scan = resolve_reference_art(slots, empty_dir)
+
+    assert scan.matched_slot_ids == []
+    assert scan.unmatched == []
+    assert slots[0].source == ""
+
+
+def test_content_hash_changes_on_file_replace(tmp_path):
+    """content_hash_file is a sha256 hex digest that changes with the
+    file's bytes, computed by streaming rather than a whole-file read."""
+    path = tmp_path / "art.jpg"
+    path.write_bytes(b"original bytes")
+    hash1 = content_hash_file(path)
+    assert len(hash1) == 64
+    assert all(c in "0123456789abcdef" for c in hash1)
+
+    path.write_bytes(b"replaced bytes")
+    hash2 = content_hash_file(path)
+
+    assert hash1 != hash2
