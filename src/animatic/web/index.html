@@ -73,6 +73,18 @@
     </div>
   </section>
 
+  <section class="panel" id="budget-section">
+    <div class="panel-head">
+      <h2>Today&rsquo;s generation budget</h2>
+      <span class="tag" id="budget-tag">&mdash;</span>
+    </div>
+    <p class="lede">
+      Google caps each model at 100 requests a day. Three of the controls below cost
+      nothing; one of them can spend a third of the image budget in a click.
+    </p>
+    <div class="budget" id="budget"></div>
+  </section>
+
   <section class="panel">
     <div class="panel-head">
       <h2>3 &middot; Swap a shot for real footage</h2>
@@ -83,6 +95,51 @@
       Remove it and the drawn shot comes back.
     </p>
     <div class="strip" id="strip"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>4 &middot; Characters</h2>
+      <span class="tag" id="chars-tag">&mdash;</span>
+    </div>
+    <p class="lede">
+      Point a character at a folder of reference images and its panels redraw from that
+      art instead of being re-invented from text each time. The number on each row is
+      what the redraw costs.
+    </p>
+    <div id="characters" class="rows"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>5 &middot; Edit a shot</h2>
+      <span class="tag tag-free">free unless you redraw</span>
+    </div>
+    <p class="lede">
+      Pick a shot, then hold it longer, describe a change, or drop in a version you
+      edited yourself. Only the described change costs a call.
+    </p>
+    <div class="editor" id="editor">
+      <p class="empty">Choose a shot from the strip above.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>6 &middot; Dailies</h2>
+      <span class="tag tag-free">free</span>
+    </div>
+    <p class="lede">
+      A take covering a range of beats. It plays its own full length with its own
+      production sound, so the cut gets shorter or longer to fit it.
+    </p>
+    <form class="daily-form" id="daily-form">
+      <label>From <input type="text" id="daily-start" placeholder="s3b1" pattern="s\d+b\d+" required></label>
+      <label>To <input type="text" id="daily-end" placeholder="s3b5" pattern="s\d+b\d+" required></label>
+      <label class="file">Take <input type="file" id="daily-file" accept="video/mp4,video/quicktime,video/webm" required></label>
+      <button type="submit" class="btn">Splice</button>
+    </form>
+    <div id="dailies" class="rows"></div>
   </section>
 
 </main>

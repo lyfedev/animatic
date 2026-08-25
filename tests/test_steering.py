@@ -273,7 +273,24 @@ class TestNegationRewriting:
 
     def test_no_other_people_becomes_a_statement_about_what_is_there(self):
         rewritten, _ = panel_edit.rewrite_negations("no other people")
-        assert "one lone figure" in rewritten
+        assert "lone figure" in rewritten.lower()
+
+    def test_the_positive_is_appended_not_substituted_in_place(self):
+        """Substituting where the negation stood produced "singing into a
+        hairbrush one lone figure occupying the frame in the room setting" —
+        which the model happened to understand. A broken sentence is worse
+        guidance than a clear one, and there is no reason to rely on luck."""
+        rewritten, _ = panel_edit.rewrite_negations(
+            "singing into a hairbrush alone in the room setting. no other people"
+        )
+        assert rewritten.startswith("singing into a hairbrush in the room setting")
+        assert rewritten.count("lone figure") == 1, "said twice is not said harder"
+
+    def test_two_negations_meaning_one_thing_are_collapsed(self):
+        _, notes = panel_edit.rewrite_negations("alone, with no other people")
+        rewritten, _ = panel_edit.rewrite_negations("alone, with no other people")
+        assert len(notes) == 2, "both are reported to the developer"
+        assert rewritten.lower().count("lone figure") == 1
 
     def test_remove_x_names_the_space_not_the_thing_twice(self):
         rewritten, _ = panel_edit.rewrite_negations("remove the turtles")
