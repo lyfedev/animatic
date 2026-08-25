@@ -150,24 +150,45 @@ last_updated: 2026-08-25T09:51:31.059Z
   }
 ]
 ````
-## Phase 4 D-09 gate — ACCEPT-WITH-NOTE (2026-08-25)
+## Phase 4 D-09 gate — ACCEPT-WITH-NOTE (2026-08-25, CORRECTED 2026-08-25)
 
 Developer reviewed all 19 scene-2 panels at the blocking-human gate and chose
 **accept-with-note**: generate the remaining 30 beats, carry these forward as known
-defects, and revisit only if they hurt the assembled cut in Phase 7. The two-pass
-revision ceiling was already spent and was not extended.
+defects, revisit only if they hurt the assembled cut in Phase 7. The two-pass revision
+ceiling was not extended.
 
-Rationale recorded at the gate: the scene reads as an editable fight with real coverage;
-four defects across nineteen panels are better judged moving in a timed cut than as
-stills; Phase 7 (first watchable animatic) is the milestone to protect.
+### Correction to the original record
 
-| # | Beat | Defect | Severity |
-|---|------|--------|----------|
-| 6 | `s2b3` | ~15 crowd figures with fully rendered faces. Survived both revision passes. The blank-face rule holds for principals but not for background crowds. | medium |
-| 7 | `s2b9`, `s2b5` | Two-figure close-ups still draw eyes; single-character close-ups are clean. The clause is less reliable with two heads in frame. | medium |
-| 10 | `s2b12` | Panel is a solid black fill — reads as a photographic negative against the line-art of every other panel. Tonally the most jarring of the set. | medium |
-| 11 | `s2b16` | Cartoon impact stars on the knockout. Tonally off for this film. | low |
+The table first written here was wrong in a way that mattered, and Phase 4 verification
+caught it by opening the real files instead of reading this ledger.
 
-**Re-evaluate at Phase 7**, in the assembled cut, not as stills. If any of these read badly
-in motion, `scripts/build_panels.py --force --only <beat_id>` regenerates one panel without
-disturbing the rest, and the cache leaves every other panel untouched.
+`s2b12` was recorded as "a solid black fill reading as a photographic negative". It is
+not. It is a close-up of ROCKY whose black hair and black t-shirt dominate a 430px
+contact-sheet thumbnail — which is what the entry was written from. The actual panel has
+a **fully rendered face: eyes with pupils, eyebrows, nose and mouth**. That is the exact
+violation the phase spent both of its revision passes eliminating, on a single-character
+close-up, the case that was reported clean.
+
+Two further entries were numbered inconsistently with this file's own JSON ledger
+(a table row "#10 s2b12" against a JSON "#10 s5b4"). Numbering below now follows the
+ledger; the table is descriptive only.
+
+### Verified state after one regeneration attempt each (2026-08-25)
+
+| Beat | Shot | Defect | Regen attempt | Status |
+|------|------|--------|---------------|--------|
+| `s2b12` | close-up | Fully rendered eyes with pupils, eyebrows. Should be brow/mouth/nose only. | 1 — **did not fix**, eyes persist | open |
+| `s3b5` | medium | Crowd figures with rendered faces | 1 — **improved**, faces now largely blank | improved |
+| `s2b3` | medium | ~15 crowd figures with rendered faces | none | open |
+| `s2b9`, `s2b5` | close-up | Two-figure close-ups draw eyes. `s2b5` affects BOTH figures, broader than first recorded. | none | open |
+| `s5b4` | medium | "ANIMAL TOWN PET SIOP" lettered on the shop sign (D-12 leak, predicted) | 1 in wave 3 — did not fix | open |
+| `s2b16` | medium | Cartoon impact stars on the knockout | none | open (low) |
+
+**What this says about the clause:** it holds for most single-character close-ups but is
+not reliable — `s2b12` is a single-character close-up and fails. Crowds and two-handers
+fail more often. Regeneration is a coin-flip against the same prompt rather than a fix.
+
+**Re-evaluate at Phase 7** in the assembled cut, not as stills.
+`scripts/build_panels.py --force --only <beat_id>` regenerates one panel; the cache leaves
+every other panel untouched. Gemini credits were exhausted during wave 3 and have since
+been topped up.
