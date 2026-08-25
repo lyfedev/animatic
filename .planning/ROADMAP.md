@@ -76,13 +76,13 @@ Plans:
   4. Replacing a slot file and re-running regenerates the panels that use it
   5. Each manifest entry records slot name, priority, source and reason
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 
 - [x] 03-01-PLAN.md — Tracer: one slot end to end, then the full 16-slot registry (7 locations, 9 characters), priority ranking and the voice key
 - [x] 03-02-PLAN.md — Reference-art ingestion, temp-art generation for every empty slot, manifest assembly with change detection and an honest S3 write
-- [ ] 03-03-PLAN.md — Real end-to-end run, art review against the D-09 failure modes, and the Asset Slot Contract for Phases 4 and 5
+- [x] 03-03-PLAN.md — Real end-to-end run, art review against the D-09 failure modes, and the Asset Slot Contract for Phases 4 and 5
 
 ### Phase 4: Panel Generation
 
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Infrastructure | 1/1 | Complete (1 gap: no CDN) | 2026-08-23 |
 | 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
-| 3. Asset Management & Manifest | 2/3 | In Progress|  |
+| 3. Asset Management & Manifest | 3/3 | In Progress|  |
 | 4. Panel Generation | 0/TBD | Not started | - |
 | 5. Audio Synthesis | 0/TBD | Not started | - |
 | 6. Motion Generation | 0/TBD | Not started | - |
@@ -235,6 +235,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 ## Backlog (deferred)
 
 ### Human steering of generation (captured 2026-08-24)
+
 Raised after seeing Phase 3's unassisted output: generation alone yields similar-looking
 characters and generic rooms, so the product is a first pass the user redirects, not a
 one-shot generator. **Gated on an experiment** — if a short description cannot meaningfully
@@ -242,28 +243,35 @@ change a character or a room, there is no reason to build an interface for it.
 
 - **S-01 Slot inspector with description override** — show every location and character
   slot, let the user add a description that feeds regeneration.
+
   - **Validated 2026-08-24:** two sentences turned the cornerman from a generic
     middle-aged man in a fishing vest into a stooped seventy-year-old swamped in a
     cardigan; the dressing room gained a low ceiling, a bolted bench and cracked tiles.
     Decisive for characters, which otherwise generate from a bare name.
+
   - **Requirement found while testing:** user text must pass through
     `style._strip_on_screen_text`, and the no-lettering rule has to survive being diluted
     by it — the described room came back with "DOJO LOCKER ROOM" painted on a sign the
     baseline had left blank, and "dojo" is not in the script.
+
   - **Feeds from reference-art candidates:** loose files are now offered rather than
     adopted (see below), and this inspector is where a human designates them. Half-built already: slot
   replacement, `content_hash` and `stale_beat_ids` exist (FR-02). Missing is the UI and a
   *text* channel — today only an image file can be swapped. Backend hook is small:
   `style.describe_slot()` already composes the location subject, so an override field it
   prefers slots straight in. Natural home: Phase 9.
+
 - **S-02 Beat stretch** — let the user ask for more beats in a scene (e.g. the fight).
   Genuinely new; nothing in the roadmap covers editing beats. Mechanically a re-parse of
   one scene at higher density, but it invalidates downstream slots, panels and timing, so
   it needs stale-tracking to extend past assets.
+
   - **Validated 2026-08-24:** scene 2 went 19 → 27 beats with all 10 spoken lines kept and
     the new beats genuinely distinct moments, not padding.
+
   - **Decided: not built now.** Beats stand as initially rendered and become updatable
     later. Nothing in Phases 3-8 may assume beats are immutable in a way that blocks this.
+
   - **Rule for when it is built: a stretch ADDS time; it must not re-time other beats.**
     Today `fit_scene_to_budget` scales every beat in a scene to hit the page target, so the
     27-beat stretch came back at the same 115.8s with mean shot pushed 6.1s → 3.7s. That is
@@ -273,10 +281,12 @@ change a character or a room, there is no reason to build an interface for it.
     explicit direction overrides it — existing beats keep their durations, new beats add
     their own, the scene grows. Matters before Phase 5 and 7 cut audio and shots to
     durations, since re-timing an approved beat invalidates both.
+
 - **S-03 Model sheet conditioning** — supply a reference sheet to drive character
   consistency. **Technical risk:** 03-RESEARCH.md flags multi-image reference conditioning
   as UNVERIFIED for `gemini-3.1-flash-image`, and NFR-03 forbids reaching for another
   provider. Spike before planning.
+
 - **S-04 Video splice replacing beats** — already scoped as Phase 8 (FR-07/FR-08). Listed
   here only to close the loop on the same idea set.
 

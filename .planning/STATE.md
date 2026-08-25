@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 current_phase: 3
-current_phase_name: Plan 02 of 3 complete; 03-03 is next
+current_phase_name: 3/3 plans executed, verification pending; Phase 4 next
 status: unknown
-stopped_at: Completed 03-02-PLAN.md — reference art priority, full generation, honest manifest
-last_updated: "2026-08-25T00:35:00.000Z"
-state_head: 73cb80a531873907cc2bd3f7081a7dbef30c5cd8
+stopped_at: Completed 03-03-PLAN.md — real run, art review, Asset Slot Contract
+last_updated: "2026-08-25T01:38:53.114Z"
+state_head: 7776c83a82ceb9d9925ab3802a57864336abc6de
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 3 — Complete (3/3 plans); Phase 4 (Panel Generation) is next
+- **Phase:** 3 — 3/3 plans executed, verification pending (see 03-ART-REVIEW.md); Phase 4 (Panel Generation) is next
 - **Active work:** None
 - **Last updated:** 2026-08-24
 - **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com (HTTP only — no TLS, see Phase 1 gap)
@@ -32,7 +32,7 @@ progress:
 |-------|-------|--------|----------|
 | 1 | Project Scaffold & Infrastructure | ⚠️ Complete, 1 gap | [1-VERIFICATION.md](phases/phase-1/1-VERIFICATION.md) — 5/6, no CloudFront CDN |
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
-| 3 | Asset Management & Manifest | ✅ Complete (3/3 plans) | [03-03-SUMMARY.md](phases/phase-3/03-03-SUMMARY.md) |
+| 3 | Asset Management & Manifest | 🔄 3/3 plans executed, verification pending | [03-03-SUMMARY.md](phases/phase-3/03-03-SUMMARY.md) |
 | 4 | Panel Generation | ⬜ Not started | — |
 | 5 | Audio Synthesis | ⬜ Not started | — |
 | 6 | Motion Generation | ⬜ Not started | — |
@@ -317,13 +317,13 @@ style block.
 
 - [Phase ?]: Phase 3 Plan 01: slot_resolver resolves 16 slots (9 char + 7 loc); rank 1 rocky, rank 2 int_blue_door_fight_club; image prompts must strip color words from location names to avoid the model painting that color onto whatever it names
 - [Phase 3]: Plan 02: reference art matched by slot_directory (wins outright) then filename_token (token-subset, not substring); generate_missing_art groups by art_slot_id and orders by min priority_rank so shared slots generate at their highest-priority member's rank; s3_writer.put_bytes centralizes all S3 writes in the codebase behind one honest S3Result
-- [Phase 3]: Plan 03: real 16-slot manifest + 13 art files shipped, all D-09/PROJECT.md art-review points pass after one --force regen with a strengthened no-facial-features subject clause; Asset Slot Contract settled in STATE.md for Phase 4/5; rocky is now a generated slot (not reference-backed) per 5f581e0's slot-directory-only reference-art rule
+- [Phase 3]: Phase 3 Plan 03: real 16-slot manifest + 13 art files shipped; rocky is now generated (not reference-backed) per 5f581e0's slot-directory-only rule; strengthened no-facial-features subject clause fixed a repeat regression; Asset Slot Contract settled in STATE.md for Phase 4/5
 
 ## Session
 
-**Last session:** 2026-08-25T00:35:00.000Z
-**Stopped at:** Completed 03-02-PLAN.md — reference art priority, full generation, honest manifest
-**Resume file:** 03-03-PLAN.md
+**Last session:** 2026-08-25T01:38:47.553Z
+**Stopped at:** Completed 03-03-PLAN.md — real run, art review, Asset Slot Contract
+**Resume file:** None
 
 ## Performance Metrics
 
@@ -331,3 +331,4 @@ style block.
 |------|----------|-------|-------|
 | Phase 3 P01 | 32min | 3 tasks | 9 files |
 | Phase 3 P02 | 62min | 3 tasks | 7 files |
+| Phase 3 P03 | 25min | 3 tasks | 5 files |
