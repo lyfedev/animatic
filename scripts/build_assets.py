@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""CLI: resolve asset slots, generate temp art, and write the asset manifest.
+"""CLI: resolve asset slots, ingest reference art, generate temp art for the
+rest, and write the asset manifest.
 
 Usage:
     python scripts/build_assets.py --dry-run
     python scripts/build_assets.py --only int_blue_door_fight_club
+    python scripts/build_assets.py --force
+    python scripts/build_assets.py --reference-dir assets/reference-art
     python scripts/build_assets.py --beats output/beats.json --pdf docs/rocky-1976.pdf
 """
 
@@ -11,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -19,14 +21,19 @@ from pathlib import Path
 # Ensure src/ is on the path when run from project root
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from animatic.core.asset_generator import generate_slot_art
-from animatic.core.asset_manifest import build_manifest, write_manifest, write_slot_art
+from animatic.core.asset_generator import generate_missing_art
+from animatic.core.asset_manifest import build_manifest, write_manifest, write_reference_art
+from animatic.core.reference_art import resolve_reference_art
 from animatic.core.slot_resolver import resolve_slots
-from animatic.core.style import build_slot_prompt, describe_slot
+
+_DEFAULT_REFERENCE_DIR = Path("assets/reference-art")
+_MANIFEST_PATH = Path("output/assets/manifest.json")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Resolve asset slots and build the manifest")
+    parser = argparse.ArgumentParser(
+        description="Resolve asset slots, ingest reference art, generate the rest, write the manifest"
+    )
     parser.add_argument(
         "--beats",
         default="output/beats.json",
@@ -38,6 +45,11 @@ def main() -> None:
         help="Path to screenplay PDF (default: docs/rocky-1976.pdf)",
     )
     parser.add_argument(
+        "--reference-dir",
+        default=str(_DEFAULT_REFERENCE_DIR),
+        help="Path to supplied reference art (default: assets/reference-art)",
+    )
+    parser.add_argument(
         "--only",
         default=None,
         help="Resolve and generate art for exactly one slot_id (tracer path)",
@@ -47,10 +59,16 @@ def main() -> None:
         action="store_true",
         help="Resolve slots and write the manifest without calling the image API",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Regenerate every slot's art even if an unchanged prompt is already on disk",
+    )
     args = parser.parse_args()
 
     beats_path = Path(args.beats)
     pdf_path = Path(args.pdf)
+    reference_dir = Path(args.reference_dir)
     if not beats_path.exists():
         print(f"Error: beat list not found at {beats_path}", file=sys.stderr)
         sys.exit(1)
@@ -61,109 +79,84 @@ def main() -> None:
     start = time.time()
     beats = json.loads(beats_path.read_text())
 
+    previous_manifest = None
+    if _MANIFEST_PATH.exists():
+        try:
+            previous_manifest = json.loads(_MANIFEST_PATH.read_text())
+        except json.JSONDecodeError:
+            previous_manifest = None
+
     print(f"\nBuilding asset manifest from {beats_path} + {pdf_path}\n")
 
-    print("Step 1/3  Resolving slots...")
+    print("Step 1/4  Resolving slots...")
     slots = resolve_slots(beats, pdf_path)
     print(f"          Resolved {len(slots)} slot(s)")
     for slot in slots:
-        print(f"            {slot.priority_rank or '-':>2}  {slot.slot_id:32s} "
-              f"({slot.slot_type}, {slot.beats} beats, {slot.duration_secs}s)")
+        print(
+            f"            {slot.priority_rank or '-':>2}  {slot.slot_id:32s} "
+            f"({slot.slot_type}, {slot.beats} beats, {slot.duration_secs}s, "
+            f"{slot.share_pct}% share)"
+        )
 
     if args.only:
         matched = [s for s in slots if s.slot_id == args.only]
         if not matched:
-            print(f"Error: no slot named {args.only!r} among {[s.slot_id for s in slots]}",
-                  file=sys.stderr)
+            print(
+                f"Error: no slot named {args.only!r} among {[s.slot_id for s in slots]}",
+                file=sys.stderr,
+            )
             sys.exit(1)
         slots = matched
-        print(f"          --only {args.only!r}: generating 1 slot\n")
+        print(f"          --only {args.only!r}: generating 1 slot")
 
-    print("\nStep 2/3  Generating art...")
-    if args.dry_run:
-        print("          --dry-run: skipping every API call; art fields left unresolved")
+    print("\nStep 2/4  Ingesting reference art...")
+    scan = resolve_reference_art(slots, reference_dir)
+    if scan.matched_slot_ids:
+        for slot_id in scan.matched_slot_ids:
+            slot = next(s for s in slots if s.slot_id == slot_id)
+            # resolve_reference_art already set slot.art_uri to the active
+            # source file's own path; write_reference_art copies those bytes
+            # into the shared output tree + S3 and overwrites art_uri/
+            # art_s3_uri/content_hash to point at the copy, so Phase 4 gets
+            # one consistent location regardless of source.
+            write_reference_art(slot, Path(slot.art_uri))
+            print(f"          {slot_id:32s} <- reference ({slot.match_rule}, {len(slot.source_files)} file(s)) -> {slot.art_uri}")
     else:
-        for slot in slots:
-            t0 = time.time()
-            prompt = build_slot_prompt(slot, _subject_note(slot, beats))
-            slot.prompt = prompt
-            image_bytes, mime_type = generate_slot_art(slot, prompt)
-            write_slot_art(slot, image_bytes, mime_type)
-            elapsed = time.time() - t0
-            print(f"          {slot.slot_id:32s} -> {slot.art_uri}  ({elapsed:.1f}s)")
+        print(f"          No files in {reference_dir} matched a slot")
+    if scan.unmatched:
+        for entry in scan.unmatched:
+            print(f"          UNMATCHED  {entry['path']} — {entry['reason']}")
 
-    print("\nStep 3/3  Writing manifest...")
-    manifest = build_manifest(slots)
+    print("\nStep 3/4  Generating art...")
+    if args.dry_run:
+        print("          --dry-run: skipping every API call; unresolved slots left as-is")
+    else:
+        def _progress(slot, outcome, elapsed):
+            print(
+                f"          {slot.slot_id:32s} rank {slot.priority_rank:>2} "
+                f"({slot.share_pct}% share) -> {outcome} {slot.art_uri}  ({elapsed:.1f}s)"
+            )
+
+        generate_missing_art(
+            slots, beats, previous_manifest=previous_manifest,
+            force=args.force, on_progress=_progress,
+        )
+
+    print("\nStep 4/4  Writing manifest...")
+    manifest = build_manifest(
+        slots, beats, beats_source=str(beats_path),
+        unmatched_reference_files=scan.unmatched,
+        previous_manifest=previous_manifest,
+    )
     result = write_manifest(manifest)
 
     elapsed_total = time.time() - start
     print(f"\n✓ Done in {elapsed_total:.1f}s")
     print(f"  Slots       : {len(slots)}")
     print(f"  Local       : {result['local_path']}")
+    if not result["s3_ok"]:
+        print(f"  WARNING: S3 write failed — {result['s3_reason']}")
     print(f"  S3          : {result['s3_uri']} (s3_ok={result['s3_ok']}: {result['s3_reason']})\n")
-
-
-_COLOR_WORD_RE = re.compile(
-    r"\b(black|white|red|blue|green|yellow|orange|purple|pink|brown|"
-    r"grey|gray|gold|silver)\b",
-    re.IGNORECASE,
-)
-
-
-def _location_description(display_name: str) -> str:
-    """Strip literal colour words out of a location name before it reaches
-    the prompt.
-
-    The output is monochrome by design (STYLE_BLOCK), but a location whose
-    own name names a colour — this corpus's "BLUE DOOR FIGHT CLUB" — reads
-    to the model as an instruction to paint that colour onto whatever it
-    names (a blue door), overriding the style block's two-tone rule. This
-    is a general defence (any color word, not a hardcoded per-slot fix).
-    """
-    stripped = _COLOR_WORD_RE.sub("", display_name).strip()
-    return re.sub(r"\s+", " ", stripped)
-
-
-def _subject_note(slot, beats) -> str:
-    """Build the subject clause for one slot's generation prompt.
-
-    Locations ask for an empty establishing view — no people, no in-scene
-    signage — since a bare `"<name> (location)"` note leaves the model free
-    to invent a populated action scene (a fight in progress, a crowd with
-    fully rendered faces, a hand-lettered banner), which is exactly the
-    "words drawn into the frame" and detailed-face failure modes D-09 and
-    PROJECT.md's visual-style rule both rule out.
-    """
-    if slot.slot_type == "location":
-        # Deliberately lowercase, unquoted and colour-stripped — a quoted
-        # proper noun reads to the model as a label to paint onto a sign
-        # (RESEARCH Pitfall 2), and a colour word in the name reads as an
-        # instruction to break the monochrome style — both observed on
-        # this exact slot (a hand-lettered "BLUE DOOR FIGHT CLUB" sign and
-        # a blue-filled door) before this prompt was tightened.
-        description = describe_slot(slot, beats)
-        return (
-            f"An empty establishing view of the physical space itself — "
-            f"the architecture, fixtures and props implied by "
-            f"{description} — with no people present anywhere in the "
-            f"shot. Every door, wall, poster board and nameplate in the "
-            f"room is left a plain blank shape, exactly as bare as the "
-            f"rest of the linework, carrying no lettering of its own — "
-            f"nothing in the picture is captioned, labeled or "
-            f"hand-painted with this location's own name or any other "
-            f"word."
-        )
-    # Characters are deliberately NOT described from their beats. A beat's
-    # content describes the action, not the person, so every character sharing
-    # a scene would inherit the same sentence and be drawn the same way —
-    # rocky and black_fighter came back byte-identical when this was tried.
-    # The name is the better subject for a character until reference art or a
-    # character-description pass exists.
-    return (
-        f"{slot.display_name.title()}, a single full-length figure standing "
-        f"alone against an open white background, carrying no lettering "
-        f"anywhere in the picture."
-    )
 
 
 if __name__ == "__main__":

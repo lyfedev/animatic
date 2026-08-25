@@ -10,14 +10,22 @@ The shared style block goes in the prompt text instead (`style.build_slot_prompt
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import time
+from pathlib import Path
+from typing import Any, Callable
 
 from google import genai
 from google.genai import types
 
 from animatic.config import settings
+from animatic.core.slot_resolver import Slot
+from animatic.core.style import build_slot_prompt, describe_slot
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[Slot, str, float], None]
 
 
 class AssetGenerationError(Exception):
@@ -60,4 +68,168 @@ def generate_slot_art(slot, prompt: str) -> tuple[bytes, str]:
     raise AssetGenerationError(
         f"No inline image data in generate_content response for slot "
         f"{getattr(slot, 'slot_id', '?')!r}"
+    )
+
+
+def generate_missing_art(
+    slots: list[Slot],
+    beats: dict[str, Any],
+    previous_manifest: dict[str, Any] | None = None,
+    force: bool = False,
+    on_progress: ProgressCallback | None = None,
+) -> None:
+    """Generate art for every slot not already resolved to reference art.
+
+    Groups slots by `art_slot_id` (minor characters share one) and iterates
+    the distinct groups in `priority_rank` order (D-10/D-11), so budget and
+    attention go to the highest-share slots first. A slot whose `source` is
+    already "reference" (Task 1 ran first) is skipped outright — it is
+    never passed to the image model.
+
+    A generated file already on disk whose prompt in `previous_manifest`
+    matches the prompt about to be sent is reused rather than regenerated,
+    unless `force` is True — image calls cost money and regenerating
+    unchanged art on every run is waste.
+
+    A failure on one group's call is caught, recorded as
+    `source="generation_failed"` with the error in `source_reason` on every
+    slot in that group, and the run continues — FR-02 says the system never
+    blocks on a missing input, and one bad slot must not cost the others.
+    The resolved art (uri, S3 uri, hash, source, reason, prompt) is copied
+    onto every slot sharing an `art_slot_id`, so all four minor characters
+    end up carrying the same art_uri and content_hash.
+    """
+    from animatic.core.asset_manifest import write_slot_art
+
+    previous_by_id: dict[str, dict[str, Any]] = {}
+    if previous_manifest:
+        previous_by_id = {
+            s["slot_id"]: s for s in previous_manifest.get("slots", [])
+        }
+
+    groups: dict[str, list[Slot]] = {}
+    for slot in slots:
+        if slot.source == "reference":
+            continue
+        art_id = slot.art_slot_id or slot.slot_id
+        groups.setdefault(art_id, []).append(slot)
+
+    ordered_art_ids = sorted(
+        groups.keys(), key=lambda aid: min(s.priority_rank for s in groups[aid])
+    )
+
+    for art_id in ordered_art_ids:
+        members = groups[art_id]
+        primary = min(members, key=lambda s: s.priority_rank)
+        prompt = build_slot_prompt(primary, _subject_note(primary, beats))
+
+        prev = previous_by_id.get(primary.slot_id)
+        reuse_path: Path | None = None
+        if not force and prev and prev.get("prompt") == prompt:
+            candidate = Path(prev.get("art_uri", ""))
+            if candidate.is_file():
+                reuse_path = candidate
+
+        if reuse_path is not None:
+            _reuse_art(members, prompt, reuse_path, prev)
+            if on_progress:
+                on_progress(primary, "reused", 0.0)
+            continue
+
+        t0 = time.time()
+        try:
+            image_bytes, mime_type = generate_slot_art(primary, prompt)
+        except Exception as e:  # noqa: BLE001 — one bad slot must not abort the run
+            reason = f"generation failed: {type(e).__name__}: {e}"
+            for member in members:
+                member.prompt = prompt
+                member.source = "generation_failed"
+                member.source_reason = reason
+            logger.warning(
+                "Generation failed for art_slot_id %s: %s", art_id, reason
+            )
+            if on_progress:
+                on_progress(primary, "failed", time.time() - t0)
+            continue
+
+        write_slot_art(primary, image_bytes, mime_type)
+        elapsed = time.time() - t0
+        for member in members:
+            member.prompt = prompt
+            if member is primary:
+                continue
+            member.art_uri = primary.art_uri
+            member.art_s3_uri = primary.art_s3_uri
+            member.content_hash = primary.content_hash
+            member.source = primary.source
+            member.source_reason = primary.source_reason
+        if on_progress:
+            on_progress(primary, "generated", elapsed)
+
+
+def _reuse_art(
+    members: list[Slot], prompt: str, reuse_path: Path, prev: dict[str, Any]
+) -> None:
+    image_bytes = reuse_path.read_bytes()
+    content_hash = hashlib.sha256(image_bytes).hexdigest()
+    art_s3_uri = prev.get("art_s3_uri", "")
+    for member in members:
+        member.prompt = prompt
+        member.art_uri = str(reuse_path)
+        member.art_s3_uri = art_s3_uri
+        member.content_hash = content_hash
+        member.source = "generated"
+        member.source_reason = (
+            f"reused existing art at {reuse_path} — prompt unchanged since "
+            f"the previous manifest (pass --force to regenerate)"
+        )
+
+
+def _subject_note(slot: Slot, beats: dict[str, Any]) -> str:
+    """Build the subject clause for one slot's generation prompt.
+
+    Locations ask for an empty establishing view grounded in the beats that
+    use the slot (`style.describe_slot` — script-derived, D-09-safe). A
+    bare `"<name> (location)"` note leaves the model free to invent a
+    populated action scene, which is exactly the "words drawn into the
+    frame" and detailed-face failure modes D-09 and PROJECT.md's
+    visual-style rule both rule out.
+
+    Characters are deliberately NOT described from their beats — a beat's
+    content describes the action, not the person, so every character
+    sharing a scene would inherit the same sentence and be drawn the same
+    way (`rocky` and `black_fighter` came back byte-identical when this was
+    tried). The name is the subject; PROJECT.md's "no facial features"
+    rule is stated positively as a blank head rather than a negation.
+    """
+    if slot.slot_type == "location":
+        description = describe_slot(slot, beats)
+        return (
+            f"An empty establishing view of the physical space itself — "
+            f"the architecture, fixtures and props implied by "
+            f"{description} — with no people present anywhere in the "
+            f"shot. Every door, wall, poster board and nameplate in the "
+            f"room is left a plain blank shape, exactly as bare as the "
+            f"rest of the linework, carrying no lettering of its own — "
+            f"nothing in the picture is captioned, labeled or "
+            f"hand-painted with this location's own name or any other "
+            f"word."
+        )
+    if slot.is_minor:
+        return (
+            "One unnamed background figure of the same period and world "
+            "as the story, a single full-length figure in a neutral "
+            "three-quarter standing pose, alone against an open white "
+            "background. The head is a smooth, unbroken white shape, "
+            "with hair, hat and jaw described by the same outline work "
+            "as the rest of the figure, carrying no lettering anywhere "
+            "in the picture."
+        )
+    return (
+        f"{slot.display_name.title()}, a single full-length figure in a "
+        f"neutral three-quarter standing pose, alone against an open "
+        f"white background. The head is a smooth, unbroken white shape, "
+        f"with hair, hat and jaw described by the same outline work as "
+        f"the rest of the figure, carrying no lettering anywhere in the "
+        f"picture."
     )

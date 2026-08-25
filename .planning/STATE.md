@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 current_phase: 3
-current_phase_name: Plan 01 of 3 complete; 03-02 is next
+current_phase_name: Plan 02 of 3 complete; 03-03 is next
 status: unknown
-stopped_at: Completed 03-01-PLAN.md — slot registry, style prompt, and manifest tracer
-last_updated: "2026-08-24T23:07:08.394Z"
-state_head: ca6295fc29935f126f9cc8e3892937fb359cb897
+stopped_at: Completed 03-02-PLAN.md — reference art priority, full generation, honest manifest
+last_updated: "2026-08-25T00:35:00.000Z"
+state_head: 73cb80a531873907cc2bd3f7081a7dbef30c5cd8
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 3 — Plan 01 of 3 complete; 03-02 is next
+- **Phase:** 3 — Plan 02 of 3 complete; 03-03 is next
 - **Active work:** None
 - **Last updated:** 2026-08-24
 - **Hosted URL:** http://animatic-alb-1855813211.us-east-1.elb.amazonaws.com (HTTP only — no TLS, see Phase 1 gap)
@@ -32,7 +32,7 @@ progress:
 |-------|-------|--------|----------|
 | 1 | Project Scaffold & Infrastructure | ⚠️ Complete, 1 gap | [1-VERIFICATION.md](phases/phase-1/1-VERIFICATION.md) — 5/6, no CloudFront CDN |
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
-| 3 | Asset Management & Manifest | 🔄 In progress (1/3 plans) | [03-01-SUMMARY.md](phases/phase-3/03-01-SUMMARY.md) |
+| 3 | Asset Management & Manifest | 🔄 In progress (2/3 plans) | [03-02-SUMMARY.md](phases/phase-3/03-02-SUMMARY.md) |
 | 4 | Panel Generation | ⬜ Not started | — |
 | 5 | Audio Synthesis | ⬜ Not started | — |
 | 6 | Motion Generation | ⬜ Not started | — |
@@ -176,6 +176,41 @@ flagged in Phase 2's verification (T-03-05).
 15 of 16 slots have no art yet (03-02's job) — visible in the manifest via
 an empty `source` field per slot, not silently stubbed.
 
+## Phase 3 Plan 02 — Reference Art, Full Generation, Honest Manifest (complete 2026-08-24)
+
+`reference_art.resolve_reference_art` matches the 4 supplied files in
+`assets/reference-art/` against the 16-slot registry: `rocky` resolves to
+`source="reference"` with all 3 rocky-named files (filename-token match),
+`boxing_poses.jpeg` is recorded as unmatched with a reason. A slot
+directory (`assets/reference-art/<slot_id>/`) wins outright over a
+filename-token match.
+
+`asset_generator.generate_missing_art` filled the remaining 15 slots — a
+real run made 12 `gemini-3.1-flash-image` calls (7 locations, 4 bespoke
+characters, 1 shared `generic_minor_character` for the four minor
+characters) and wrote real art to `output/assets/generated/` and S3. A
+second real run reused all 12 files with zero new API calls (3.4s vs
+127.5s) because each group's prompt matched the previous manifest.
+
+`s3_writer.put_bytes` is now the one place in the codebase that talks to
+`boto3` — `beat_assembler._write_s3` and `asset_manifest` both route
+through it, keeping their existing return contracts but logging failure
+at ERROR (T-03-05, closing the `beat_assembler` gap flagged in Phase 2's
+verification).
+
+Change detection (ROADMAP criterion 4) verified against the real
+manifest: swapping `generic_minor_character.jpg`'s bytes and re-running
+marked exactly the 4 minor characters' 5 beat_ids stale; restoring and
+re-running twice settled back to `stale_beat_ids == []`.
+
+**Known visual-quality gap (not blocking):** 2 of 13 generated art files
+(`generic_minor_character.jpg`, `promoter.jpg`) drew a detailed face
+instead of the instructed blank white head-shape; `ext_street.jpg` drew
+one person in a location meant to be peopleless. Image generation has no
+seed parameter (D-12), so this is expected non-determinism, not a code
+defect — regenerate with `--force --only <slot_id>` before Phase 4 if
+stricter compliance is needed. Logged to `.planning/WINDOWS.md`.
+
 ## Deadline
 
 2026-09-09 14:00 PDT
@@ -183,15 +218,17 @@ an empty `source` field per slot, not silently stubbed.
 ## Decisions
 
 - [Phase ?]: Phase 3 Plan 01: slot_resolver resolves 16 slots (9 char + 7 loc); rank 1 rocky, rank 2 int_blue_door_fight_club; image prompts must strip color words from location names to avoid the model painting that color onto whatever it names
+- [Phase 3]: Plan 02: reference art matched by slot_directory (wins outright) then filename_token (token-subset, not substring); generate_missing_art groups by art_slot_id and orders by min priority_rank so shared slots generate at their highest-priority member's rank; s3_writer.put_bytes centralizes all S3 writes in the codebase behind one honest S3Result
 
 ## Session
 
-**Last session:** 2026-08-24T23:07:03.744Z
-**Stopped at:** Completed 03-01-PLAN.md — slot registry, style prompt, and manifest tracer
-**Resume file:** 03-02-PLAN.md
+**Last session:** 2026-08-25T00:35:00.000Z
+**Stopped at:** Completed 03-02-PLAN.md — reference art priority, full generation, honest manifest
+**Resume file:** 03-03-PLAN.md
 
 ## Performance Metrics
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 3 P01 | 32min | 3 tasks | 9 files |
+| Phase 3 P02 | 62min | 3 tasks | 7 files |
