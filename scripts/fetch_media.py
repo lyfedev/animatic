@@ -6,9 +6,16 @@ Local disk is the developer's working copy; the bucket is the durable one. A
 container starts with neither, so this fetches what the demo needs to serve:
 the beat list, the panels, the audio, the motion clips and their indexes.
 
-Deliberately NOT a full mirror. Rendered cuts are excluded — a container that
-downloaded a stale `animatic.mp4` would serve a cut that does not match the
-state it reports, and re-rendering takes thirty seconds.
+Rendered cuts ARE fetched, but only the three mode-named ones
+(`animatic-panels`, `animatic-animatic`, `animatic-partial`). Those are
+rendered footage-free, which is exactly the state a fresh container is in, so
+what a visitor plays matches what `state.json` says. Without them the demo
+serves a shot strip and a 404 until someone waits thirty seconds for a render.
+
+The dated deliverable renders (`01-no-footage.mp4` and friends) and the
+whole-cut `animatic.mp4` are NOT fetched: they can describe a footage state the
+container does not have, and a video that contradicts the state beside it is
+worse than no video.
 
 Safe to run repeatedly: a file already present with the right size is skipped,
 so a restart is fast and a partially-populated volume repairs itself.
@@ -33,7 +40,21 @@ from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError  
 from animatic.config import settings  # noqa: E402
 
 # Everything the demo reads at request time. `video/` is absent on purpose.
-DEFAULT_PREFIXES = ("beats/", "assets/", "panels/", "audio/", "motion/")
+DEFAULT_PREFIXES = ("beats/", "assets/", "panels/", "audio/", "motion/", "video/")
+
+# Under `video/`, only these. See the module docstring for why the rest are not
+# safe to serve on a container whose footage state may differ from the machine
+# that rendered them.
+_VIDEO_ALLOWED = {
+    # Published deliberately, NOT a side effect of the last local render.
+    # `video/index.json` is overwritten by every `build_video.py` run, so a
+    # developer rendering with footage on their own machine would silently
+    # tell every container that its footage-free cut is stale.
+    "video/container-index.json",
+    "video/animatic-panels.mp4",
+    "video/animatic-animatic.mp4",
+    "video/animatic-partial.mp4",
+}
 
 # Where each S3 prefix lands locally. The bucket layout and the local layout
 # are not identical — `beats/latest.json` is `output/beats.json` on disk —
@@ -41,6 +62,7 @@ DEFAULT_PREFIXES = ("beats/", "assets/", "panels/", "audio/", "motion/")
 _LOCAL_FOR_KEY = {
     "beats/latest.json": Path("output/beats.json"),
     "assets/manifest.json": Path("output/assets/manifest.json"),
+    "video/container-index.json": Path("output/video/index.json"),
 }
 
 
@@ -117,8 +139,12 @@ def _list(client, bucket: str, prefix: str):
     paginator = client.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get("Contents", []):
-            if not obj["Key"].endswith("/"):
-                yield obj["Key"], obj["Size"]
+            key = obj["Key"]
+            if key.endswith("/"):
+                continue
+            if key.startswith("video/") and key not in _VIDEO_ALLOWED:
+                continue
+            yield key, obj["Size"]
 
 
 def _local_for(key: str) -> Path:
