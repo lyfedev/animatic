@@ -57,3 +57,6 @@ output/
 # CDK output (regenerated on synth)
 infra/cdk.out/
 assets/Rocky.mp4
+
+# Agent worktrees (transient, never committed)
+.claude/worktrees/
