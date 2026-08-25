@@ -13,16 +13,25 @@ it guessed. Two mechanisms, in this priority order:
 1. Slot directory — `assets/reference-art/<slot_id>/` holds art for that
    slot explicitly. This is the named-slot interface FR-02 describes and it
    is unambiguous, so it wins outright (match_rule "slot_directory").
-2. Filename token — for flat files directly under the reference directory,
-   every token of the slot_id (split on "_"/"-") must appear among the
-   filename stem's own tokens. Token equality rather than bare substring
-   matching, so a short slot_id such as "fan" cannot swallow an unrelated
-   filename (match_rule "filename_token").
+2. Filename token — a flat file directly under the reference directory
+   whose stem tokens contain every token of a slot_id is recorded as a
+   *candidate* for that slot. It is NOT adopted.
 
-A file that matches no slot by either mechanism is recorded in
-`ReferenceScan.unmatched` with a reason, so a mis-named file is visible
-rather than silently ignored (NFR-04) — `boxing_poses.jpeg` is the live
-example among this project's four supplied files.
+**Only a slot directory designates reference art.** A loose file in an
+unsorted folder is a guess about intent, not a statement of it, and
+adopting one silently makes it canonical: this project's own
+`assets/reference-art/` holds four unsorted files, three of which token-
+matched `rocky` and promoted a halftone photograph into the cut in place
+of line art, without anyone ever having designated it. FR-02 asks for art
+"in named slots" — the named directory is that interface.
+
+Candidates are surfaced in `ReferenceScan.candidates` so a future slot
+inspector (backlog S-01) can offer them for designation — "found
+rocky_porkpie.jpg, is this ROCKY?" — which is the point at which a human
+actually supplies the intent. Until then the slot generates normally.
+
+A file matching no slot at all is recorded in `ReferenceScan.unmatched`
+with a reason, so a mis-named file stays visible (NFR-04).
 """
 
 from __future__ import annotations
@@ -51,6 +60,9 @@ class ReferenceScan:
 
     matched_slot_ids: list[str] = field(default_factory=list)
     unmatched: list[dict[str, str]] = field(default_factory=list)
+    # Loose files that look like they belong to a slot but were never
+    # designated. Offered for confirmation, never adopted.
+    candidates: list[dict[str, str]] = field(default_factory=list)
 
 
 def content_hash_file(path: Path) -> str:
@@ -151,18 +163,20 @@ def resolve_reference_art(slots: list[Slot], reference_dir: Path | str) -> Refer
     for sid, files in by_slot.items():
         if sid in dir_matched:
             continue
-        files = sorted(files)
-        _apply_match(
-            slot_by_id[sid],
-            files,
-            match_rule="filename_token",
-            source_reason=(
-                f"{len(files)} file(s) matched slot {sid!r} on filename "
-                f"tokens ({', '.join(f.stem for f in files)}) — reference "
-                f"art takes priority over generation"
-            ),
-        )
-        scan.matched_slot_ids.append(sid)
+        for f in sorted(files):
+            scan.candidates.append(
+                {
+                    "path": str(f),
+                    "slot_id": sid,
+                    "reason": (
+                        f"filename tokens suggest slot {sid!r}, but the file "
+                        f"sits loose in the reference directory rather than in "
+                        f"assets/reference-art/{sid}/ — a guess about intent, "
+                        f"not a designation, so {sid!r} generates normally. "
+                        f"Move it into that directory to adopt it."
+                    ),
+                }
+            )
 
     return scan
 

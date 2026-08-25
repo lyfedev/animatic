@@ -241,7 +241,17 @@ one-shot generator. **Gated on an experiment** — if a short description cannot
 change a character or a room, there is no reason to build an interface for it.
 
 - **S-01 Slot inspector with description override** — show every location and character
-  slot, let the user add a description that feeds regeneration. Half-built already: slot
+  slot, let the user add a description that feeds regeneration.
+  - **Validated 2026-08-24:** two sentences turned the cornerman from a generic
+    middle-aged man in a fishing vest into a stooped seventy-year-old swamped in a
+    cardigan; the dressing room gained a low ceiling, a bolted bench and cracked tiles.
+    Decisive for characters, which otherwise generate from a bare name.
+  - **Requirement found while testing:** user text must pass through
+    `style._strip_on_screen_text`, and the no-lettering rule has to survive being diluted
+    by it — the described room came back with "DOJO LOCKER ROOM" painted on a sign the
+    baseline had left blank, and "dojo" is not in the script.
+  - **Feeds from reference-art candidates:** loose files are now offered rather than
+    adopted (see below), and this inspector is where a human designates them. Half-built already: slot
   replacement, `content_hash` and `stale_beat_ids` exist (FR-02). Missing is the UI and a
   *text* channel — today only an image file can be swapped. Backend hook is small:
   `style.describe_slot()` already composes the location subject, so an override field it
@@ -250,6 +260,19 @@ change a character or a room, there is no reason to build an interface for it.
   Genuinely new; nothing in the roadmap covers editing beats. Mechanically a re-parse of
   one scene at higher density, but it invalidates downstream slots, panels and timing, so
   it needs stale-tracking to extend past assets.
+  - **Validated 2026-08-24:** scene 2 went 19 → 27 beats with all 10 spoken lines kept and
+    the new beats genuinely distinct moments, not padding.
+  - **Decided: not built now.** Beats stand as initially rendered and become updatable
+    later. Nothing in Phases 3-8 may assume beats are immutable in a way that blocks this.
+  - **Rule for when it is built: a stretch ADDS time; it must not re-time other beats.**
+    Today `fit_scene_to_budget` scales every beat in a scene to hit the page target, so the
+    27-beat stretch came back at the same 115.8s with mean shot pushed 6.1s → 3.7s. That is
+    wrong twice: the user asked for the fight to play longer and it did not, and beats they
+    had already approved silently changed length. Measured unfitted, the same stretch runs
+    124.4s (+8.8s). So page geometry is the DEFAULT when no one has said otherwise, and an
+    explicit direction overrides it — existing beats keep their durations, new beats add
+    their own, the scene grows. Matters before Phase 5 and 7 cut audio and shots to
+    durations, since re-timing an approved beat invalidates both.
 - **S-03 Model sheet conditioning** — supply a reference sheet to drive character
   consistency. **Technical risk:** 03-RESEARCH.md flags multi-image reference conditioning
   as UNVERIFIED for `gemini-3.1-flash-image`, and NFR-03 forbids reaching for another

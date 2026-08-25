@@ -248,25 +248,49 @@ def test_build_manifest_shape():
 # reference_art — supplied art wins over generation (Task 1)
 # ---------------------------------------------------------------------------
 
-def test_reference_art_takes_priority():
-    """With the reference directory as supplied today, rocky resolves to
-    source "reference" with its three rocky-named files and never reaches
-    the image model; no other slot resolves to source "reference"."""
+def test_loose_reference_files_are_candidates_not_adoptions():
+    """A file in an unsorted folder is a guess about intent, not a designation.
+
+    Regression guard: three rocky-named files sitting loose in
+    assets/reference-art/ were token-matched and silently promoted to
+    canonical art for the ROCKY slot, putting a halftone photograph in the
+    cut in place of line art. Nobody ever designated them. They must be
+    offered, not adopted.
+    """
     beats = json.loads(BEATS_PATH.read_text())
     slots = resolve_slots(beats, PDF_PATH)
 
-    resolve_reference_art(slots, REFERENCE_DIR)
+    scan = resolve_reference_art(slots, REFERENCE_DIR)
 
     by_id = {s.slot_id: s for s in slots}
-    rocky = by_id["rocky"]
-    assert rocky.source == "reference"
-    assert rocky.match_rule == "filename_token"
-    assert len(rocky.source_files) == 3
-    assert all("rocky" in f.lower() for f in rocky.source_files)
-    assert rocky.source_reason
+    assert by_id["rocky"].source != "reference", (
+        "loose filename-token matches must never become canonical art"
+    )
+    assert [s.slot_id for s in slots if s.source == "reference"] == []
 
-    reference_backed = [s.slot_id for s in slots if s.source == "reference"]
-    assert reference_backed == ["rocky"]
+    suggested = {c["slot_id"] for c in scan.candidates}
+    assert "rocky" in suggested, "the files should still be offered for designation"
+    for c in scan.candidates:
+        assert c["reason"], "every candidate explains why it was not adopted"
+
+
+def test_slot_directory_designates_reference_art(tmp_path):
+    """A named slot directory IS a designation, and takes priority (criterion 3)."""
+    beats = json.loads(BEATS_PATH.read_text())
+    slots = resolve_slots(beats, PDF_PATH)
+
+    ref = tmp_path / "reference-art"
+    (ref / "rocky").mkdir(parents=True)
+    (ref / "rocky" / "front.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+
+    scan = resolve_reference_art(slots, ref)
+
+    rocky = {s.slot_id: s for s in slots}["rocky"]
+    assert rocky.source == "reference"
+    assert rocky.match_rule == "slot_directory"
+    assert rocky.content_hash
+    assert rocky.source_reason
+    assert "rocky" in scan.matched_slot_ids
 
 
 def test_unmatched_reference_file_is_recorded():
