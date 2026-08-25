@@ -17,9 +17,9 @@ replacement, and the submission deliverables.
 - [x] **Phase 2: Beat Parser** - Rocky PDF to a structured beat list with machine-readable reasons
 - [x] **Phase 3: Asset Management & Manifest** - Named asset slots, temp-art fallback, manifest output
 - [x] **Phase 4: Panel Generation** - Black line-art panel per beat, consistent style, facial feature rules
-- [ ] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
+- [x] **Phase 5: Audio Synthesis** - Synthetic dialogue, action narration, music cues
 - [ ] **Phase 6: Motion Generation** - Cost-constrained motion on selected high-value beats
-- [ ] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
+- [x] **Phase 7: Video Assembly** - Timed video cut from panels, motion and audio
 - [ ] **Phase 8: Footage Replacement & Per-Shot State** - Live swap of animatic shots for real footage
 - [ ] **Phase 9: Web UI & Demo Shell** - Hosted demo, three-state render, real progress indicators
 - [ ] **Phase 10: Polish, Submission, Demo Video** - Everything required for submission
@@ -126,6 +126,13 @@ Plans:
 
 ### Phase 6: Motion Generation
 
+> **Sequencing changed 2026-08-25: Phase 7 was built first.**
+> Motion covers 4 beats of 49 (8.2%), the assembled cut is the actual deliverable, Veo shares
+> the daily request cap that cost a Phase 5 run, and Phase 4's eight accepted art defects were
+> explicitly deferred to "re-evaluate in the assembled cut, not as stills" — which needed the
+> cut to exist. Phase 7's shot-source seam already resolves motion clips when they appear in
+> `output/motion/`, so this phase writes files and changes no assembly code.
+
 **Goal**: Cost-constrained motion applied to selected high-value beats.
 **Depends on**: Phase 4
 **Requirements**: FR-04, NFR-03, NFR-04
@@ -227,9 +234,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Beat Parser | 1/1 | Complete | 2026-08-24 |
 | 3. Asset Management & Manifest | 3/3 | Complete (1 override: reference art held unexercised) | 2026-08-25 |
 | 4. Panel Generation | 3/3 | Complete (1 override: 8 named facial/lettering exceptions) | 2026-08-25 |
-| 5. Audio Synthesis | 0/TBD | Not started | - |
-| 6. Motion Generation | 0/TBD | Not started | - |
-| 7. Video Assembly | 0/TBD | Not started | - |
+| 5. Audio Synthesis | 1/1 | Complete (14 clips stale, playable) | 2026-08-25 |
+| 6. Motion Generation | 0/TBD | Deferred behind Phase 7 | - |
+| 7. Video Assembly | 1/1 | Complete (built ahead of 6) | 2026-08-25 |
 | 8. Footage Replacement & Per-Shot State | 0/TBD | Not started | - |
 | 9. Web UI & Demo Shell | 0/TBD | Not started | - |
 | 10. Polish, Submission, Demo Video | 0/TBD | Not started | - |

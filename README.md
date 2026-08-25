@@ -73,6 +73,37 @@ PYTHONPATH=src python scripts/build_panels.py
 # beat's content, change a beat's shot size, or replace a dependent slot's
 # art and re-run — only the affected panels redraw, and everything else
 # stays cached.
+
+# 9. Cast voices, write narration, and synthesise audio for every beat
+PYTHONPATH=src python scripts/build_audio.py
+# Each beat gets one clip: the script's own line for a dialogue beat, a
+# narration line written to fit the beat for everything else. Characters
+# are cast once and keep their voice across runs. Music is generated where
+# the SCRIPT specifies a cue (a radio, a record player), described by its
+# staging rather than by any song it names.
+# --dry-run reports the plan and the cue prompts without spending a call.
+# --only <beat_id> / --scene N narrow generation, never the index.
+
+# 10. Assemble the audio into one track to listen to
+PYTHONPATH=src python scripts/preview_audio.py
+# Every clip end to end at its own shot length, music mixed under the beats
+# that carry it. A review artifact, not the cut — Phase 7 builds the video.
+# --scene N previews one scene. Needs ffmpeg on PATH.
+
+# 11. Assemble the cut
+PYTHONPATH=src python scripts/build_video.py
+# Joins panels, motion and audio into output/video/animatic.mp4. Cuts on the
+# audio index's shot_secs, never the beat's own duration -- shot_secs is the
+# reconciled figure that keeps speech from being clipped.
+# --dry-run reports the shot list and cut length without encoding.
+# --scene N assembles one scene.
+
+# 12. Swap a shot for real footage
+cp my_clip.mp4 assets/footage/s2b2.mp4 && PYTHONPATH=src python scripts/build_video.py
+# The filename carries the beat number -- s2b2.mp4 or s2b2-take3.mp4 both
+# work. Real footage beats generated motion, which beats the still panel.
+# Delete the file and re-run to put the animatic shot back. The cut manifest
+# reports real_footage_pct by screen time.
 ```
 
 ## Deploying to AWS

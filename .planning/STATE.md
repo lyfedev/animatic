@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-current_phase: 5
-current_phase_name: Audio Synthesis
-status: ready_to_plan
-stopped_at: Phases 3 and 4 verified and closed (each 1 accepted override). Phase 5 not yet planned.
-last_updated: "2026-08-25T11:12:08Z"
+current_phase: 7
+current_phase_name: Video Assembly
+status: in_progress
+stopped_at: Phase 7 built and the cut is watchable. Phase 6 (motion) deferred behind it. Phase 7 verification not yet run.
+last_updated: "2026-08-25T12:40:00Z"
 state_head: b8170b48296933be829f4c0a03aa161af5bb4869
 progress:
   total_phases: 10
-  completed_phases: 4
+  completed_phases: 6
   total_plans: 8
   completed_plans: 8
-  percent: 40
+  percent: 60
 ---
 
 # Animatic — STATE.md
@@ -19,7 +19,7 @@ progress:
 ## Current State
 
 - **Milestone:** 1 — Actor
-- **Phase:** 5 — Audio Synthesis, not yet planned. Phases 3 and 4 are closed: both verified `passed`, each carrying one explicit developer override (Phase 3: reference art held unexercised; Phase 4: 8 named facial/lettering exception beats).
+- **Phase:** 7 complete — the cut exists and is watchable. Phase 6 (motion) deliberately deferred behind it: motion covers 4 beats of 49, the cut is the deliverable, and Phase 4's accepted art defects can only be judged in motion. Phase 5 done. Phases 3 and 4 are closed: both verified `passed`, each carrying one explicit developer override (Phase 3: reference art held unexercised; Phase 4: 8 named facial/lettering exception beats).
 - **Active work:** None
 - **Carried into Phase 5+:** 8 WINDOWS.md panel defects, re-evaluated at Phase 7 in the assembled cut rather than as stills
 - **Last updated:** 2026-08-25
@@ -35,9 +35,9 @@ progress:
 | 2 | Beat Parser | ✅ Complete | [2-VERIFICATION.md](phases/phase-2/2-VERIFICATION.md) — scenes 1-8, 18/18 dialogue lines, durations floored |
 | 3 | Asset Management & Manifest | ✅ Complete, 1 override | [03-VERIFICATION.md](phases/phase-3/03-VERIFICATION.md) — 7/7, reference art held unexercised |
 | 4 | Panel Generation | ✅ Complete, 1 override | [04-VERIFICATION.md](phases/phase-4/04-VERIFICATION.md) — 5/5, 41/49 panels clean, 8 named exceptions |
-| 5 | Audio Synthesis | ⬜ Not started | — |
-| 6 | Motion Generation | ⬜ Not started | — |
-| 7 | Video Assembly | ⬜ Not started | — |
+| 5 | Audio Synthesis | ✅ Complete, 14 clips stale | [Audio Contract](STATE.md) — 49 clips, 0 failed, 2 music cues |
+| 6 | Motion Generation | ⬜ Not started (deferred behind 7) | — |
+| 7 | Video Assembly | ✅ Complete | [Cut Contract](STATE.md) — 49 shots, 262.1s, swap seam proven live |
 
 ### Milestone 2 — Box Office (footage replacement + external-facing demo)
 
@@ -485,6 +485,169 @@ accept-with-note: all 49 beats have panels, and five defects are carried in
 confirmed signage lettering `s5b4`), plus one already-carried Phase 3 item (`#4`, a filled-black
 garment shape). None block Phase 7 — re-evaluate in the assembled cut; `--force --only
 <beat_id>` regenerates one panel in isolation if any read badly in motion.
+
+## Phase 5 — Audio Contract
+
+What Phases 6 and 7 read without re-deriving it — same register as the Beat, Asset Slot and
+Panel Contracts above.
+
+**Where it lives.** `output/audio/index.json` locally, `audio/index.json` in the media bucket.
+Clips: `output/audio/<beat_id>.wav` locally, `audio/<beat_id>.wav` in S3, 24kHz 16-bit mono.
+Music: `output/audio/music_<cue_id>.mp3`, stereo 44.1kHz. The index names `beats_source` and
+`beats_generated_at` so it ties back to its input, and carries its own honest `s3_ok`/
+`s3_reason`.
+
+**`shot_secs` is the field Phase 7 cuts on — not `duration_secs`.** This is the one place the
+audio index overrides the beat list, and it is the mechanism that makes ROADMAP criterion 5
+true. Each entry carries `beat_duration_secs` (what Phase 2 planned), `audio_secs` (what the
+clip actually measured) and `shot_secs` (what the shot must be), plus `shot_secs_source` —
+`page_budget` when the beat already covered its audio, `audio_floor` when the audio forced the
+shot wider — and `shot_secs_reason` stating the arithmetic. `shot_secs >= audio_secs` for every
+entry, by construction. In the current corpus 44 of 49 shots keep their page budget and 5 were
+widened, +5.66s in total, so the cut runs 261.4s against the beat list's 255.7s.
+
+**Why widen rather than clip.** Same rule Phase 2 applied with its dialogue floor: a script line
+is not ours to cut, so the shot yields to the speech. Narration is ours to write, so it yields
+instead — an overrunning narration line is rewritten to the rate its own clip just measured and
+regenerated once. Only if that still overruns does the shot widen on a narration beat.
+
+**Measured, not assumed.** Speech rate is the phase's central fact and it was measured twice:
+four smoke clips before any code, then all 31 narration clips of the first full run (min 1.56,
+p10 1.82, median 2.16, p90 2.50, max 2.92 words/sec). Planning at the median made half the beats
+overrun by construction, so `audio_timing.SAFE_WORDS_PER_SEC` is 1.8 — near p10. Every clip is
+still measured after generation; the constant only plans text length. Index-vs-file duration
+drift is 0.0000s across all 49.
+
+**Silence is trimmed before anything is measured.** Every TTS clip arrives with ~0.25s of
+lead-in and ~0.3-0.5s of trail-out, independent of length. On a 2.2s beat that padding is a
+third of the shot. `audio_timing.trim_silence` removes the ends and keeps interior pauses,
+which are delivery, not padding.
+
+**Voices.** One `voice` per entry with a `voice_reason`. A character is cast once and the cast
+is stored in the index, so a re-run reuses it — re-casting each run would give a character a
+different voice between runs, which is what criterion 2 forbids. `NARRATOR_VOICE` is reserved
+and never cast to a character, so narration stays audibly distinct. The model casts; a
+deterministic guard then enforces every-part-cast, no-two-share, and not-the-narrator, recording
+each intervention in the reason. Current cast: ROCKY Iapetus, CORNERMAN Rasalgethi, BLACK
+FIGHTER Fenrir, ANNOUNCER Orus, PROMOTER Schedar, FIGHTER #1 Zephyr, FIGHTER #2 Umbriel, FAN
+Puck, WOMAN Callirrhoe; narrator Charon.
+
+**Music cues come from the SCRIPT, not the beat list.** `music_cues.find_music_cues` reads the
+PDF scene text, unwraps it into sentences, and matches the sound sources a screenplay names
+(radio, phonograph, record player, jukebox, band). Two cues in scenes 1-8: scene 3's dressing-
+room radio (`s3b5`) and scene 8's phonograph (`s8b4`, `s8b5`). A script naming none produces
+none. Each cue records `beat_ids`, `total_secs` and a reason quoting the script line.
+
+**Named works are stripped before the prompt is built.** The script calls for a specific 1958
+single by title; handing that title to a music model asks it to reproduce a copyrighted
+recording. The cue is described by its staging instead — the phonograph, the room, the crackle.
+Asserted on the built prompt string (`tests/test_music_cues.py`), never by reading the source
+for a strip call, including a planted-title case so the guard is tested rather than the luck
+that the real script keeps its title on a non-matching line.
+
+**On-screen-text directives never reach the narrator.** Reuses Phase 3's
+`style._strip_on_screen_text`. v1 read scene 2's SUPERIMPOSE directive aloud as the word
+"Text."
+
+**What the cache key covers.** `audio_generator.audio_cache_key` hashes `beat_id`, `kind`,
+`text`, `voice`, `duration_secs` and `AUDIO_TEMPLATE_VERSION`. `duration_secs` is in the payload
+unlike the panel key, because a changed duration means a changed narration budget. Bumping
+`AUDIO_TEMPLATE_VERSION` re-plans narration as well as invalidating clips — the v1→v2 bump is
+the worked example.
+
+**Two rate limits, and the second one is the one that bites — but it is PER MODEL.** This
+backend caps the TTS model at **10 requests/minute** AND **100 requests/day**, and the daily one
+is scoped `GenerateRequestsPerDayPerProjectPerModel` — verified live 2026-08-25 by calling three
+TTS models after one was exhausted; the other two answered normally. **So a spent model is not a
+spent day.** `--tts-model gemini-2.5-flash-preview-tts` (or `settings.gemini_tts_model`) finishes
+a run the default cannot. Every clip records the `tts_model` that voiced it and the index counts
+them in `tts_models`, so a corpus split across two models is visible rather than discovered by
+ear. The window is also ROLLING, not midnight-reset: requests age out gradually. The per-minute cap is handled by
+pacing (`_TTS_MIN_INTERVAL_SECS`, 7.5s) plus a 429 that waits the interval the server names in
+its own `RetryInfo`. The per-day cap cannot be paced around: it answers `retryDelay: 43424s`
+(twelve hours), and a full run costs 49 calls plus one per overrunning narration retry, so **two
+full runs in a day exhausts it.** A wait longer than `_DAILY_QUOTA_THRESHOLD_SECS` is recognised
+as the daily cap and raises `DailyQuotaExhausted`, which halts the run.
+
+**A failed regeneration never costs a working clip.** Three rules, each paid for by the v2 run:
+
+1. A beat whose regeneration fails keeps its existing clip (`source: reused_after_failure`)
+   rather than becoming a failure record. Before this, the v2 run turned a complete 49-clip
+   index into 39 good entries and 10 failures while all ten clips sat playable on disk.
+2. A beat whose previous entry has no clip is looked up on disk by the naming convention, and
+   re-measured from the file — a failed generation never deletes what is already there.
+3. The run **halts** on a daily cap and carries every remaining beat forward through the same
+   recovery, rather than marching them into the same wall one at a time.
+
+**Three index fields carry the resulting honesty**, and Phases 6/7/9 must read them:
+`stale_beat_ids` (playable but behind the current template — re-run when quota allows),
+`text_mismatch_beat_ids` (**the clip predates the `text` the index records for it — do not
+caption or display `text` for these**), and `halted_reason` (non-null when a run stopped early).
+A stale entry is never treated as a cache hit, or the recovery would defeat itself: a rescued
+clip carries the cache key of the text it failed to generate.
+
+**Current corpus state (2026-08-25):** 49/49 current at v2, 0 stale, 0 text-mismatched,
+0 failed. Criterion 5 holds across all 49. **37 clips voiced on `gemini-3.1-flash-tts-preview`,
+12 on `gemini-2.5-flash-preview-tts`** — scenes 5-8, almost all narration, generated on the
+fallback after the primary's daily cap. Same prebuilt voice names, so the cast is unchanged;
+whether the narrator audibly shifts around scene 5 is a judgement for an ear, not a test. To make
+the corpus single-model, re-run with `--force` on a fresh day.
+
+**`--scene`/`--only` narrow generation, never the index** — the whole-index rule, inherited from
+Phase 4 and tested here.
+
+## Phase 7 — Cut Contract
+
+What Phases 6, 8 and 9 read. The last of the four contracts.
+
+**Where it lives.** `output/video/animatic.mp4` and `output/video/index.json` locally,
+`video/` in the media bucket. The manifest records `cut_sha256`, `planned_secs` (sum of
+`shot_secs`) and `measured_secs` (probed from the finished file), so a cut can always be tied
+to the shots it claims.
+
+**Cut on `shot_secs` from the audio index — never `duration_secs` from the beat.** This is the
+rule the phase turns on. Phase 2 planned durations from page geometry; Phase 5 measured the
+audio and widened the shots that could not hold their own speech. Using the beat's number would
+clip five shots in the current corpus. A beat with no audio entry falls back to its planned
+duration and records `shot_secs_source: beat_duration` saying so. A `shot_secs` of 0 (a failed
+clip) is not trusted — it would drop the beat out of the cut entirely.
+
+**The shot-source seam is how Phases 6 and 8 both work.** `shot_sources.resolve_shot` picks the
+highest-priority file that exists for a beat: real footage (`assets/footage/`), then motion
+(`output/motion/`), then the still panel (`output/panels/`). Nothing else needs to change for
+either phase — Phase 6 writes motion clips into its directory and Phase 8 accepts footage into
+its own. **Proven live 2026-08-25**: dropping `s2b2.mp4` into `assets/footage/` put 8.8s of the
+real film into the cut (`real_footage_pct` 3.4%), and deleting it restored the panel — FR-07 and
+Phase 8's criterion 4, working two phases early.
+
+**Beat number comes from the FILENAME, never from the footage** (PROJECT.md non-goal).
+`s2b2.mp4` and `s2b2-take3.mp4` both match; `s2b50.mp4` and `rocky_fight_final.mp4` do not. Two
+takes for the same beat resolve on sorted name so the cut is reproducible.
+
+**Real footage keeps the cut's audio, not its own.** The extracted clip is muxed silent and the
+beat's synthesised narration or dialogue plays over it, so the audio bed stays continuous across
+a swap. Revisit if a swapped shot should carry production sound.
+
+**A clip is never re-timed to fit its shot.** Motion shorter than its shot holds its last frame
+(`tpad=stop_mode=clone`); longer is trimmed. Speeding or slowing would misrepresent the motion
+that was generated. The audio sets the length because the audio is what a viewer notices.
+
+**Frame: 1280x720, 24fps, white pad.** Panels are 1376x768, so the cut scales down and pads
+rather than distorting. The pad is **white** — the house style is black line art on white, and
+black bars around a white frame read as a rendering fault rather than a letterbox.
+
+**`real_footage_pct` is by SCREEN TIME, not shot count** (FR-08). One 12-second replaced shot is
+more of the cut than three 2-second ones.
+
+**Audio warnings ride along.** `stale_audio_beat_ids` and `text_mismatch_beat_ids` are copied
+from the audio index onto the cut manifest, so a reader need not open two files to learn the cut
+contains stale or mislabelled audio. **Phase 9 must not caption from `text` for the mismatch
+set.**
+
+**Current cut (2026-08-25):** 49 shots, scenes 1-8, 262.1s measured against 261.77s planned
+(6.7ms per shot, sub-frame rounding at 24fps). 0 shots clip their audio. Two renders exist —
+`animatic.mp4` (all panels) and `animatic-partial.mp4` (one real shot). The third required by
+the Definition of Done, all-footage, needs footage for all 49 beats.
 
 ## Deadline
 
