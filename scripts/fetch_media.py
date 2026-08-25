@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""Pull generated media from S3 into `output/`, for a fresh container.
+
+The pipeline writes every artifact to both local disk and the media bucket.
+Local disk is the developer's working copy; the bucket is the durable one. A
+container starts with neither, so this fetches what the demo needs to serve:
+the beat list, the panels, the audio, the motion clips and their indexes.
+
+Deliberately NOT a full mirror. Rendered cuts are excluded — a container that
+downloaded a stale `animatic.mp4` would serve a cut that does not match the
+state it reports, and re-rendering takes thirty seconds.
+
+Safe to run repeatedly: a file already present with the right size is skipped,
+so a restart is fast and a partially-populated volume repairs itself.
+
+Usage:
+    python scripts/fetch_media.py
+    python scripts/fetch_media.py --prefix panels/ --prefix audio/
+    python scripts/fetch_media.py --dry-run
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+import boto3  # noqa: E402
+from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError  # noqa: E402
+
+from animatic.config import settings  # noqa: E402
+
+# Everything the demo reads at request time. `video/` is absent on purpose.
+DEFAULT_PREFIXES = ("beats/", "assets/", "panels/", "audio/", "motion/")
+
+# Where each S3 prefix lands locally. The bucket layout and the local layout
+# are not identical — `beats/latest.json` is `output/beats.json` on disk —
+# so the mapping is explicit rather than inferred from the key.
+_LOCAL_FOR_KEY = {
+    "beats/latest.json": Path("output/beats.json"),
+    "assets/manifest.json": Path("output/assets/manifest.json"),
+}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Fetch generated media from S3")
+    parser.add_argument("--bucket", default=settings.media_bucket)
+    parser.add_argument(
+        "--prefix", action="append", default=None,
+        help=f"S3 prefix to fetch; repeatable (default: {' '.join(DEFAULT_PREFIXES)})",
+    )
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help="Exit 0 even if nothing was found — for a first boot before any run",
+    )
+    args = parser.parse_args()
+
+    prefixes = tuple(args.prefix) if args.prefix else DEFAULT_PREFIXES
+    client = _client()
+    if client is None:
+        sys.exit("no AWS credentials available — cannot fetch media")
+
+    fetched = skipped = 0
+    for prefix in prefixes:
+        for key, size in _list(client, args.bucket, prefix):
+            local = _local_for(key)
+            if local.exists() and local.stat().st_size == size:
+                skipped += 1
+                continue
+            if args.dry_run:
+                print(f"  would fetch {key} -> {local} ({size} bytes)")
+                fetched += 1
+                continue
+            local.parent.mkdir(parents=True, exist_ok=True)
+            client.download_file(args.bucket, key, str(local))
+            print(f"  {key} -> {local}")
+            fetched += 1
+
+    print(f"\n{fetched} fetched, {skipped} already current")
+    if fetched == 0 and skipped == 0 and not args.allow_empty:
+        sys.exit(
+            f"nothing found under {prefixes} in {args.bucket} — has the "
+            f"pipeline run?"
+        )
+
+
+def _client():
+    try:
+        session = boto3.Session(profile_name="newaccount")
+    except Exception:  # noqa: BLE001 — no profile in a container; that is normal
+        session = boto3.Session()
+    try:
+        client = session.client("s3", region_name=settings.aws_region)
+        client.list_buckets()
+        return client
+    except (NoCredentialsError, ClientError, BotoCoreError) as exc:
+        print(f"S3 unavailable: {exc}", file=sys.stderr)
+        return None
+
+
+def _list(client, bucket: str, prefix: str):
+    paginator = client.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            if not obj["Key"].endswith("/"):
+                yield obj["Key"], obj["Size"]
+
+
+def _local_for(key: str) -> Path:
+    """Where an S3 key lands on disk."""
+    if key in _LOCAL_FOR_KEY:
+        return _LOCAL_FOR_KEY[key]
+    if key.startswith("assets/art/"):
+        return Path("output/assets/generated") / Path(key).name
+    return Path("output") / key
+
+
+if __name__ == "__main__":
+    main()

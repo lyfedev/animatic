@@ -52,7 +52,10 @@ PYTHONPATH=src pytest tests/ -v
 
 # 5. Start the server
 PYTHONPATH=src uvicorn animatic.main:app --reload
-# → http://localhost:8000/health
+# → http://localhost:8000/        the demo shell
+# → http://localhost:8000/health  liveness
+# The shell renders the cut at three states, streams real per-shot progress
+# over SSE, and lets you drop a clip on any shot to swap it for real footage.
 
 # 6. Parse the screenplay into a beat list
 PYTHONPATH=src python scripts/parse_beats.py
@@ -90,7 +93,18 @@ PYTHONPATH=src python scripts/preview_audio.py
 # that carry it. A review artifact, not the cut — Phase 7 builds the video.
 # --scene N previews one scene. Needs ffmpeg on PATH.
 
-# 11. Assemble the cut
+# 11. Animate a few high-value beats (Veo)
+PYTHONPATH=src python scripts/build_motion.py
+# Seeds Veo with each beat's existing PANEL rather than generating from text,
+# so the clip continues the approved art instead of competing with it.
+# Cost-constrained: --budget defaults to 4 of 49. Selection prefers beats the
+# parser flagged as motion candidates, then action over dialogue over
+# establishing, then longer over shorter. Every beat records motion
+# true/false and why. A beat whose clip fails or is refused falls back to its
+# panel with no further action -- the assembler resolves motion by filename.
+# --dry-run shows the selection and prompts without spending a call.
+
+# 12. Assemble the cut
 PYTHONPATH=src python scripts/build_video.py
 # Joins panels, motion and audio into output/video/animatic.mp4. Cuts on the
 # audio index's shot_secs, never the beat's own duration -- shot_secs is the
@@ -98,12 +112,32 @@ PYTHONPATH=src python scripts/build_video.py
 # --dry-run reports the shot list and cut length without encoding.
 # --scene N assembles one scene.
 
-# 12. Swap a shot for real footage
+# 13. Swap a shot for real footage
 cp my_clip.mp4 assets/footage/s2b2.mp4 && PYTHONPATH=src python scripts/build_video.py
 # The filename carries the beat number -- s2b2.mp4 or s2b2-take3.mp4 both
 # work. Real footage beats generated motion, which beats the still panel.
 # Delete the file and re-run to put the animatic shot back. The cut manifest
-# reports real_footage_pct by screen time.
+# reports real_footage_pct by screen time. The same swap is available in the
+# demo UI: drop a file on a shot, or click a swapped shot to remove it.
+
+# 14. Ask what the cut is made of, without rendering anything
+PYTHONPATH=src python scripts/build_state.py
+# Writes output/state.json: per-shot state (animatic_still / animatic_motion /
+# footage), the percentage of the cut that is real by screen time, and whether
+# the rendered cut still matches what would be rendered now. Reads what is on
+# disk, spends nothing, runs in milliseconds -- safe to poll.
+```
+
+## Fetching generated media
+
+Panels, audio and motion live in S3, not in git. A fresh clone or a fresh
+container pulls them:
+
+```bash
+PYTHONPATH=src python scripts/fetch_media.py
+# Skips anything already present at the right size, so it is safe to re-run.
+# Rendered cuts are deliberately NOT fetched — a stale cut would contradict
+# the state the demo reports, and re-rendering takes thirty seconds.
 ```
 
 ## Deploying to AWS

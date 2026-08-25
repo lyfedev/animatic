@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # on the fallback rather than stopping for half a day.
     gemini_tts_model: str = "gemini-3.1-flash-tts-preview"
     gemini_music_model: str = "lyria-3-clip-preview"
+    gemini_veo_model: str = "veo-3.1-fast-generate-preview"
     media_bucket: str = "animatic-media-628818"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

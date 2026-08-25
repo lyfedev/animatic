@@ -95,11 +95,19 @@ def plan_shots(
     beats_doc: dict[str, Any],
     audio_index: dict[str, Any],
     scene: int | None = None,
+    ignore_footage: bool = False,
+    ignore_motion: bool = False,
 ) -> list[Shot]:
     """Resolve every beat into a Shot without encoding anything.
 
     Separated from encoding so `--dry-run` can report the whole cut — its
     length, its sources, which beats are real footage — for free.
+
+    `ignore_footage` and `ignore_motion` force the cut down the priority
+    ladder without touching the filesystem. DR-04 requires the SAME scene to
+    render at three states (all panels / partial footage / all footage), and
+    moving files around to achieve that would race with anything else reading
+    the tree — including a second visitor on the hosted demo.
     """
     clips = {c["beat_id"]: c for c in audio_index.get("clips", [])}
     music = _music_by_beat(audio_index)
@@ -121,13 +129,29 @@ def plan_shots(
                 secs=secs,
                 secs_source=secs_source,
                 secs_reason=secs_reason,
-                source=resolve_shot(beat["beat_id"]),
+                source=_resolve(beat["beat_id"], ignore_footage, ignore_motion),
                 audio_path=audio_path,
                 music_path=music.get(beat["beat_id"]),
             )
         )
 
     return sorted(shots, key=lambda s: (s.scene, s.beat))
+
+
+def _resolve(beat_id: str, ignore_footage: bool, ignore_motion: bool) -> ShotSource:
+    """Resolve a shot's picture, optionally skipping levels of the ladder.
+
+    Implemented by pointing the ignored level at a directory that cannot
+    exist, so the ONE priority rule in `shot_sources` stays the only place
+    that decides — a second copy of the ladder here would be a second thing to
+    keep correct.
+    """
+    nowhere = Path("/nonexistent-animatic-render-mode")
+    return resolve_shot(
+        beat_id,
+        footage_dir=nowhere if ignore_footage else None,
+        motion_dir=nowhere if ignore_motion else None,
+    )
 
 
 def _shot_length(beat: dict[str, Any], clip: dict[str, Any] | None) -> tuple[float, str, str]:
