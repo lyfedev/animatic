@@ -53,6 +53,18 @@ PYTHONPATH=src pytest tests/ -v
 # 5. Start the server
 PYTHONPATH=src uvicorn animatic.main:app --reload
 # → http://localhost:8000/health
+
+# 6. Parse the screenplay into a beat list
+PYTHONPATH=src python scripts/parse_beats.py
+
+# 7. Resolve asset slots and generate/fetch their art
+PYTHONPATH=src python scripts/build_assets.py
+# Reference art goes in assets/reference-art/, either as flat files named
+# after a slot or (preferred — the only mechanism that's adopted
+# automatically) in a folder named after the slot, e.g.
+# assets/reference-art/rocky/photo.jpg. Any slot without reference art is
+# filled with generated temp art so the pipeline never blocks on a missing
+# input.
 ```
 
 ## Deploying to AWS
