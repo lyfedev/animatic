@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animatic — Rocky, scenes 1–8</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='2' y='4' width='12' height='8' fill='none' stroke='%2314110f' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <h1>Animatic</h1>
+    <p class="sub">A screenplay becomes a rough cut. <em>Rocky</em> (1976), scenes 1&ndash;8.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="panel" id="parse-section">
+    <div class="panel-head">
+      <h2>1 &middot; Parse the screenplay</h2>
+      <span class="tag tag-live">runs live</span>
+    </div>
+    <p class="lede">
+      Reads the PDF and re-derives the beat list on every call &mdash; nothing here is replayed.
+      Takes about a minute.
+    </p>
+    <button id="parse-btn" class="btn">Parse beats</button>
+    <div id="parse-out" class="out" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>2 &middot; Render the cut</h2>
+      <span class="tag tag-cached" id="cache-tag" hidden></span>
+    </div>
+    <p class="lede">
+      The same scenes at three states. Assembly is live; the panels, voices and motion it
+      assembles were generated ahead of time.
+    </p>
+
+    <div class="modes" role="group" aria-label="Render state">
+      <label class="mode">
+        <input type="radio" name="mode" value="panels" checked>
+        <span class="mode-name">All panels</span>
+        <span class="mode-note">Drawn frames only</span>
+      </label>
+      <label class="mode">
+        <input type="radio" name="mode" value="animatic">
+        <span class="mode-name">Panels + motion</span>
+        <span class="mode-note">Generated movement on selected beats</span>
+      </label>
+      <label class="mode">
+        <input type="radio" name="mode" value="partial">
+        <span class="mode-name">With real footage</span>
+        <span class="mode-note">Whatever has been swapped in</span>
+      </label>
+    </div>
+
+    <button id="render-btn" class="btn btn-primary">Render</button>
+
+    <div id="progress" class="progress" hidden>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+      <p class="progress-line" id="progress-line"></p>
+      <ul class="events" id="events"></ul>
+    </div>
+
+    <div id="player-wrap" hidden>
+      <video id="player" controls preload="metadata"></video>
+      <p class="disclosure" id="disclosure"></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>3 &middot; Swap a shot for real footage</h2>
+      <span class="tag" id="real-tag">0% real</span>
+    </div>
+    <p class="lede">
+      Drop a clip on any shot. The filename does not matter &mdash; the beat it lands on does.
+      Remove it and the drawn shot comes back.
+    </p>
+    <div class="strip" id="strip"></div>
+  </section>
+
+</main>
+
+<footer class="wrap foot">
+  <p>Google Cloud AI for every generative step &mdash; Gemini for beats and panels, Gemini TTS
+     for voices, Lyria for score, Veo for motion. Assembly by FFmpeg.</p>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
