@@ -2,7 +2,7 @@
 
 A screenplay-to-watchable-rough-cut system. Takes a script and produces drawn panels, synthetic voices, generated motion, and a timed video. Real footage clips can replace animatic shots incrementally; the cut rebuilds on each swap.
 
-> Built for the IBM Bob × Google Cloud hackathon. Demo: Rocky (1976), scenes 1–8.
+> Built for the IBM Bob × Google Cloud hackathon. 
 
 [![Deploy](https://github.com/lyfedev/animatic/actions/workflows/deploy.yml/badge.svg)](https://github.com/lyfedev/animatic/actions/workflows/deploy.yml)
 
